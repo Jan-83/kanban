@@ -139,31 +139,31 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   const popularTags = ['Frontend', 'Backend', 'UI/UX', 'DevOps', 'GitHub', 'Baza Danych', 'Testy'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs overflow-y-auto">
       <div
-        className="relative w-full max-w-2xl bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl p-6 my-8 text-neutral-100"
+        className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl p-6 my-8 text-slate-800"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
           <div>
-            <h3 className="text-base font-bold text-white">
+            <h3 className="text-base font-bold text-slate-900">
               {initialTask ? 'Edycja zadania' : 'Nowe zadanie'}
             </h3>
-            <p className="text-xs text-neutral-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Ustal priorytet, termin realizacji i przypisz osobę do wykonania.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {error && (
-          <div className="mt-3 p-2.5 rounded-lg bg-rose-950/40 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
+          <div className="mt-3 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -172,22 +172,22 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1">
-              Tytuł zadania <span className="text-rose-400">*</span>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Tytuł zadania <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="np. Zaprojektować komponent nawigacji"
-              className="w-full bg-neutral-950 border border-neutral-800 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-sm text-neutral-100 placeholder-neutral-500 focus:outline-none transition-colors"
+              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none transition-colors"
               autoFocus
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               Opis szczegółowy
             </label>
             <textarea
@@ -195,7 +195,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Dodaj szczegóły, wytyczne techniczne lub kryteria akceptacji..."
               rows={3}
-              className="w-full bg-neutral-950 border border-neutral-800 focus:border-indigo-500 rounded-xl px-3.5 py-2 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none transition-colors"
+              className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-colors"
             />
           </div>
 
@@ -203,13 +203,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Column / Status */}
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Kolumna Kanban
               </label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full bg-neutral-950 border border-neutral-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none cursor-pointer"
               >
                 <option value="todo">📋 Do zrobienia</option>
                 <option value="in_progress">⚡ W trakcie</option>
@@ -219,13 +219,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             {/* Priority */}
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1">
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Priorytet zadania
               </label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full bg-neutral-950 border border-neutral-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none cursor-pointer"
               >
                 <option value="urgent">🔴 Pilny / Krytyczny</option>
                 <option value="high">🟠 Wysoki</option>
@@ -240,8 +240,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             {/* Due Date */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
                   Termin realizacji (Deadline)
                 </label>
               </div>
@@ -249,36 +249,36 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                 type="datetime-local"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-neutral-950 border border-neutral-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none font-mono"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none font-mono"
               />
               {/* Quick Date Presets */}
-              <div className="flex items-center gap-1.5 mt-1.5 overflow-x-auto text-[11px] text-neutral-400">
-                <span className="text-[10px] text-neutral-500">Szybki wybór:</span>
+              <div className="flex items-center gap-1.5 mt-1.5 overflow-x-auto text-[11px] text-slate-500">
+                <span className="text-[10px] text-slate-400">Szybki wybór:</span>
                 <button
                   type="button"
                   onClick={() => handleQuickDeadline(0, 18)}
-                  className="px-1.5 py-0.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[10px]"
+                  className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] cursor-pointer"
                 >
                   Dziś (18:00)
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickDeadline(1, 12)}
-                  className="px-1.5 py-0.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[10px]"
+                  className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] cursor-pointer"
                 >
                   Jutro
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickDeadline(3, 17)}
-                  className="px-1.5 py-0.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[10px]"
+                  className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] cursor-pointer"
                 >
                   Za 3 dni
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickDeadline(7, 18)}
-                  className="px-1.5 py-0.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[10px]"
+                  className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] cursor-pointer"
                 >
                   Za tydzień
                 </button>
@@ -287,14 +287,14 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             {/* Assignee */}
             <div>
-              <label className="block text-xs font-semibold text-neutral-300 mb-1 flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5 text-neutral-400" />
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-slate-400" />
                 Przypisana osoba
               </label>
               <select
                 value={assigneeId || ''}
                 onChange={(e) => setAssigneeId(e.target.value ? e.target.value : null)}
-                className="w-full bg-neutral-950 border border-neutral-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-neutral-200 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none cursor-pointer"
               >
                 <option value="">Brak przypisania</option>
                 {teamMembers.map((m) => (
@@ -303,7 +303,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   </option>
                 ))}
               </select>
-              <p className="text-[10px] text-neutral-500 mt-1">
+              <p className="text-[10px] text-slate-400 mt-1">
                 Przypisany członek zespołu otrzyma automatyczne powiadomienia o terminie.
               </p>
             </div>
@@ -311,31 +311,31 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           {/* Subtasks / Checklist */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1 flex items-center gap-1.5">
-              <CheckSquare className="w-3.5 h-3.5 text-neutral-400" />
+            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+              <CheckSquare className="w-3.5 h-3.5 text-slate-400" />
               Zadania cząstkowe (Checklista)
             </label>
             <div className="space-y-1.5 mb-2">
               {subtasks.map((st) => (
                 <div
                   key={st.id}
-                  className="flex items-center justify-between p-2 rounded-lg bg-neutral-950 border border-neutral-800/80 text-xs"
+                  className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs"
                 >
                   <label className="flex items-center gap-2 cursor-pointer flex-1">
                     <input
                       type="checkbox"
                       checked={st.completed}
                       onChange={() => handleToggleSubtask(st.id)}
-                      className="rounded border-neutral-700 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-0 w-3.5 h-3.5"
                     />
-                    <span className={st.completed ? 'line-through text-neutral-500' : 'text-neutral-200'}>
+                    <span className={st.completed ? 'line-through text-slate-400' : 'text-slate-800'}>
                       {st.title}
                     </span>
                   </label>
                   <button
                     type="button"
                     onClick={() => handleRemoveSubtask(st.id)}
-                    className="p-1 text-neutral-500 hover:text-rose-400 rounded"
+                    className="p-1 text-slate-400 hover:text-rose-600 rounded cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -355,12 +355,12 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   }
                 }}
                 placeholder="Wpisz podzadanie i naciśnij Enter..."
-                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-1.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleAddSubtask}
-                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 rounded-lg"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs text-slate-700 rounded-lg cursor-pointer"
               >
                 Dodaj
               </button>
@@ -369,21 +369,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
           {/* Tags */}
           <div>
-            <label className="block text-xs font-semibold text-neutral-300 mb-1 flex items-center gap-1.5">
-              <Tag className="w-3.5 h-3.5 text-neutral-400" />
+            <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-slate-400" />
               Tagi i etykiety
             </label>
-            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {tags.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-neutral-800 border border-neutral-700 rounded text-[11px] font-mono text-neutral-300"
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-[11px] font-mono text-slate-700"
                 >
                   #{t}
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(t)}
-                    className="hover:text-rose-400"
+                    className="hover:text-rose-600 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -403,19 +403,19 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   }
                 }}
                 placeholder="Wpisz tag (np. Frontend)..."
-                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-lg px-3 py-1.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-indigo-500"
+                className="flex-1 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-lg px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleAddTag}
-                className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-200 rounded-lg"
+                className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-xs text-slate-700 rounded-lg cursor-pointer"
               >
                 Dodaj tag
               </button>
             </div>
 
             {/* Popular tags suggestions */}
-            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-neutral-500 overflow-x-auto">
+            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-slate-500 overflow-x-auto">
               <span>Szybkie:</span>
               {popularTags.map((pt) => (
                 <button
@@ -424,7 +424,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   onClick={() => {
                     if (!tags.includes(pt)) setTags([...tags, pt]);
                   }}
-                  className="hover:text-neutral-300 underline"
+                  className="hover:text-indigo-600 underline cursor-pointer"
                 >
                   +{pt}
                 </button>
@@ -433,7 +433,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-neutral-800 flex items-center justify-between">
+          <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
             {initialTask && onDelete ? (
               <button
                 type="button"
@@ -443,7 +443,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     onClose();
                   }
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Usuń zadanie
@@ -456,13 +456,13 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-medium text-neutral-400 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
                 Anuluj
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-sm shadow-indigo-600/30 transition-all active:scale-95"
+                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-sm shadow-indigo-600/20 transition-all active:scale-95 cursor-pointer"
               >
                 {initialTask ? 'Zapisz zmiany' : 'Utwórz zadanie'}
               </button>

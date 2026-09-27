@@ -228,7 +228,7 @@ export default function App() {
   }, [tasks, teamMembers, showToast]);
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       {/* Top Navigation Bar */}
       <Navbar
         activeTab={activeTab}
@@ -248,18 +248,18 @@ export default function App() {
           <div
             className={`p-3.5 rounded-xl border shadow-xl flex items-center gap-2.5 text-xs font-medium backdrop-blur-md ${
               toastMessage.type === 'alert'
-                ? 'bg-rose-950/90 border-rose-800 text-rose-200 shadow-rose-950/40'
+                ? 'bg-rose-50/95 border-rose-200 text-rose-900 shadow-rose-200/50'
                 : toastMessage.type === 'success'
-                ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200 shadow-emerald-950/40'
-                : 'bg-neutral-900/90 border-neutral-800 text-neutral-200 shadow-black/50'
+                ? 'bg-emerald-50/95 border-emerald-200 text-emerald-900 shadow-emerald-200/50'
+                : 'bg-white/95 border-slate-200 text-slate-800 shadow-slate-200/60'
             }`}
           >
             {toastMessage.type === 'alert' ? (
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             ) : toastMessage.type === 'success' ? (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             ) : (
-              <Bell className="w-4 h-4 text-indigo-400 shrink-0" />
+              <Bell className="w-4 h-4 text-indigo-600 shrink-0" />
             )}
             <span className="flex-1">{toastMessage.text}</span>
           </div>

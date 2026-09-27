@@ -129,82 +129,82 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     <div className="space-y-6">
       {/* Top Banner / Metrics Overview */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 flex items-center justify-between">
+        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-xs text-neutral-400 font-medium">Wszystkie zadania</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-neutral-100 mt-0.5">
+            <div className="text-xs text-slate-500 font-medium">Wszystkie zadania</div>
+            <div className="text-xl font-bold font-mono tabular-nums text-slate-900 mt-0.5">
               {stats.total}
             </div>
           </div>
-          <span className="text-xs font-mono text-neutral-500">100%</span>
+          <span className="text-xs font-mono text-slate-400">100%</span>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 flex items-center justify-between">
+        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-xs text-neutral-400 font-medium">Do zrobienia</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-indigo-400 mt-0.5">
+            <div className="text-xs text-slate-500 font-medium">Do zrobienia</div>
+            <div className="text-xl font-bold font-mono tabular-nums text-indigo-600 mt-0.5">
               {stats.todoCount}
             </div>
           </div>
-          <span className="text-xs font-mono text-neutral-500">
+          <span className="text-xs font-mono text-slate-400">
             {stats.total ? Math.round((stats.todoCount / stats.total) * 100) : 0}%
           </span>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 flex items-center justify-between">
+        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-xs text-neutral-400 font-medium">W trakcie</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-amber-400 mt-0.5">
+            <div className="text-xs text-slate-500 font-medium">W trakcie</div>
+            <div className="text-xl font-bold font-mono tabular-nums text-amber-600 mt-0.5">
               {stats.inProgressCount}
             </div>
           </div>
-          <span className="text-xs font-mono text-neutral-500">
+          <span className="text-xs font-mono text-slate-400">
             {stats.total ? Math.round((stats.inProgressCount / stats.total) * 100) : 0}%
           </span>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-3.5 flex items-center justify-between">
+        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-xs text-neutral-400 font-medium">Zrobione</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-emerald-400 mt-0.5">
+            <div className="text-xs text-slate-500 font-medium">Zrobione</div>
+            <div className="text-xl font-bold font-mono tabular-nums text-emerald-600 mt-0.5">
               {stats.doneCount}
             </div>
           </div>
-          <span className="text-xs font-mono text-neutral-500">
+          <span className="text-xs font-mono text-slate-400">
             {stats.total ? Math.round((stats.doneCount / stats.total) * 100) : 0}%
           </span>
         </div>
 
-        <div className="col-span-2 sm:col-span-1 bg-neutral-900 border border-rose-900/40 rounded-xl p-3.5 flex items-center justify-between">
+        <div className="col-span-2 sm:col-span-1 bg-white border border-rose-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
           <div>
-            <div className="text-xs text-rose-400 font-medium flex items-center gap-1.5">
+            <div className="text-xs text-rose-600 font-medium flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" />
               Przeterminowane
             </div>
-            <div className="text-xl font-bold font-mono tabular-nums text-rose-400 mt-0.5">
+            <div className="text-xl font-bold font-mono tabular-nums text-rose-600 mt-0.5">
               {stats.overdue}
             </div>
           </div>
           {stats.today > 0 && (
             <div className="text-right">
-              <div className="text-[10px] text-amber-400">Na dzisiaj:</div>
-              <div className="text-xs font-bold font-mono text-amber-400">{stats.today}</div>
+              <div className="text-[10px] text-amber-600 font-medium">Na dzisiaj:</div>
+              <div className="text-xs font-bold font-mono text-amber-700">{stats.today}</div>
             </div>
           )}
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-neutral-900/70 border border-neutral-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-neutral-500" />
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Szukaj po tytule, opisie lub tagu..."
-            className="w-full bg-neutral-950 border border-neutral-800 focus:border-indigo-500 rounded-lg pl-9 pr-3 py-1.5 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none transition-colors"
+            className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-colors"
           />
         </div>
 
@@ -215,7 +215,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value)}
             aria-label="Filtruj po priorytecie"
-            className="bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-indigo-500"
+            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
           >
             <option value="all">Wszystkie priorytety</option>
             <option value="urgent">🔴 Pilny / Krytyczny</option>
@@ -229,7 +229,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             value={assigneeFilter}
             onChange={(e) => setAssigneeFilter(e.target.value)}
             aria-label="Filtruj po osobie odpowiedzialnej"
-            className="bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-indigo-500"
+            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
           >
             <option value="all">Wszyscy wykonawcy</option>
             <option value="unassigned">Nieprzypisane</option>
@@ -245,7 +245,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             value={deadlineFilter}
             onChange={(e) => setDeadlineFilter(e.target.value)}
             aria-label="Filtruj po terminie realizacji"
-            className="bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 focus:outline-none focus:border-indigo-500"
+            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
           >
             <option value="all">Wszystkie terminy</option>
             <option value="overdue">⚠️ Tylko przeterminowane</option>
@@ -257,7 +257,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {hasActiveFilters && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-neutral-400 hover:text-white bg-neutral-800/80 hover:bg-neutral-800 rounded-lg transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Reset filtrów
@@ -267,19 +267,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {/* Export CSV Report Button */}
           <button
             onClick={onExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/60 rounded-lg border border-emerald-800/80 transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 shadow-2xs transition-colors ml-auto cursor-pointer"
             title="Eksportuj zadania do pliku arkusza kalkulacyjnego (.csv)"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
             <span>Raport CSV</span>
           </button>
 
           {/* GitHub Quick Button */}
           <button
             onClick={onOpenGitHubModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:text-white bg-neutral-800 hover:bg-neutral-700/80 rounded-lg border border-neutral-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
           >
-            <GitBranch className="w-3.5 h-3.5 text-indigo-400" />
+            <GitBranch className="w-3.5 h-3.5 text-indigo-600" />
             GitHub Hub
           </button>
         </div>

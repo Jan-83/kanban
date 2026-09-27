@@ -39,7 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <header className="sticky top-0 z-30 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
@@ -53,9 +53,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Kanban className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+                <span className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
                   Strona Deli Smart Space
-                  <span className="text-xs font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
+                  <span className="text-xs font-mono font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                     GitHub
                   </span>
                 </span>
@@ -64,13 +64,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Zone 2: Navigation Links (single line, functional tabs) */}
-          <nav className="hidden md:flex items-center space-x-1 bg-neutral-950/60 p-1 rounded-xl border border-neutral-800/80">
+          <nav className="hidden md:flex items-center space-x-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200">
             <button
               onClick={() => setActiveTab('board')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                 activeTab === 'board'
-                  ? 'bg-neutral-800 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/50'
+                  ? 'bg-white text-indigo-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               <Kanban className="w-4 h-4" />
@@ -81,8 +81,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setActiveTab('list')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                 activeTab === 'list'
-                  ? 'bg-neutral-800 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/50'
+                  ? 'bg-white text-indigo-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               <ListFilter className="w-4 h-4" />
@@ -93,8 +93,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setActiveTab('timeline')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                 activeTab === 'timeline'
-                  ? 'bg-neutral-800 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/50'
+                  ? 'bg-white text-indigo-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               <CalendarClock className="w-4 h-4" />
@@ -108,8 +108,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setActiveTab('team')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                 activeTab === 'team'
-                  ? 'bg-neutral-800 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/50'
+                  ? 'bg-white text-indigo-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -120,8 +120,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setActiveTab('github')}
               className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
                 activeTab === 'github'
-                  ? 'bg-neutral-800 text-white shadow-sm'
-                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-900/50'
+                  ? 'bg-white text-indigo-700 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               <GitBranch className="w-4 h-4" />
@@ -137,15 +137,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onToggleNotifications}
                 className={`relative p-2 rounded-lg border transition-colors ${
                   isNotificationsOpen
-                    ? 'bg-neutral-800 border-neutral-700 text-white'
-                    : 'bg-neutral-900/80 border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800'
+                    ? 'bg-slate-100 border-slate-300 text-slate-900'
+                    : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
                 title="Powiadomienia o terminach"
                 aria-label="Powiadomienia"
               >
                 <Bell className="w-4 h-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 px-1.5 py-0.2 min-w-4.5 h-4.5 rounded-full bg-rose-600 text-[10px] font-mono font-bold text-white flex items-center justify-center shadow-lg shadow-rose-600/30">
+                  <span className="absolute -top-1 -right-1 px-1.5 py-0.2 min-w-4.5 h-4.5 rounded-full bg-rose-600 text-[10px] font-mono font-bold text-white flex items-center justify-center shadow-md shadow-rose-600/30">
                     {unreadCount}
                   </span>
                 )}
@@ -155,31 +155,31 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Export CSV Button */}
             <button
               onClick={onExportCSV}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-neutral-300 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 rounded-lg transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg shadow-2xs transition-colors whitespace-nowrap"
               title="Eksportuj wszystkie zadania do arkusza kalkulacyjnego CSV"
             >
-              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
               <span className="hidden sm:inline">Eksport CSV</span>
             </button>
 
             {/* Quick Add Task Button */}
             <button
               onClick={onOpenNewTaskModal}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-sm shadow-indigo-600/30 transition-all active:scale-95 whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg shadow-sm shadow-indigo-600/20 transition-all active:scale-95 whitespace-nowrap cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Dodaj zadanie</span>
             </button>
 
             {/* User Profile Capsule */}
-            <div className="hidden lg:flex items-center pl-2 ml-1 border-l border-neutral-800">
+            <div className="hidden lg:flex items-center pl-2 ml-1 border-l border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-indigo-700 text-indigo-100 flex items-center justify-center text-xs font-bold border border-indigo-500/40">
+                <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold border border-indigo-200">
                   DM
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-medium text-neutral-200 leading-tight">Dariusz Maj</div>
-                  <div className="text-[10px] text-neutral-400 font-mono leading-tight">darecki.maj@gmail.com</div>
+                  <div className="text-xs font-semibold text-slate-800 leading-tight">Dariusz Maj</div>
+                  <div className="text-[10px] text-slate-500 font-mono leading-tight">darecki.maj@gmail.com</div>
                 </div>
               </div>
             </div>
@@ -188,11 +188,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Sub-Navigation Bar */}
-        <div className="flex md:hidden overflow-x-auto py-2 space-x-1 border-t border-neutral-800/60 no-scrollbar">
+        <div className="flex md:hidden overflow-x-auto py-2 space-x-1 border-t border-slate-200 no-scrollbar">
           <button
             onClick={() => setActiveTab('board')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
-              activeTab === 'board' ? 'bg-indigo-600 text-white' : 'text-neutral-400'
+              activeTab === 'board' ? 'bg-indigo-600 text-white' : 'text-slate-600'
             }`}
           >
             <Kanban className="w-3.5 h-3.5" />
@@ -201,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => setActiveTab('list')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
-              activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-neutral-400'
+              activeTab === 'list' ? 'bg-indigo-600 text-white' : 'text-slate-600'
             }`}
           >
             <ListFilter className="w-3.5 h-3.5" />
@@ -210,7 +210,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => setActiveTab('timeline')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
-              activeTab === 'timeline' ? 'bg-indigo-600 text-white' : 'text-neutral-400'
+              activeTab === 'timeline' ? 'bg-indigo-600 text-white' : 'text-slate-600'
             }`}
           >
             <CalendarClock className="w-3.5 h-3.5" />
@@ -219,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => setActiveTab('team')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
-              activeTab === 'team' ? 'bg-indigo-600 text-white' : 'text-neutral-400'
+              activeTab === 'team' ? 'bg-indigo-600 text-white' : 'text-slate-600'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -228,7 +228,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => setActiveTab('github')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap ${
-              activeTab === 'github' ? 'bg-indigo-600 text-white' : 'text-neutral-400'
+              activeTab === 'github' ? 'bg-indigo-600 text-white' : 'text-slate-600'
             }`}
           >
             <GitBranch className="w-3.5 h-3.5" />

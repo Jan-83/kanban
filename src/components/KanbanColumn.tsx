@@ -32,19 +32,19 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     todo: {
       icon: CircleDot,
       accentBorder: 'border-t-indigo-500',
-      badgeColor: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20',
+      badgeColor: 'bg-indigo-50 text-indigo-700 border border-indigo-200',
       emptyText: 'Brak zadań do zrobienia. Zaplanuj nowe zadania.',
     },
     in_progress: {
       icon: PlayCircle,
       accentBorder: 'border-t-amber-500',
-      badgeColor: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+      badgeColor: 'bg-amber-50 text-amber-700 border border-amber-200',
       emptyText: 'Nic nie jest aktualnie w trakcie realizacji. Przeciągnij zadanie tutaj.',
     },
     done: {
       icon: CheckCircle2,
       accentBorder: 'border-t-emerald-500',
-      badgeColor: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
       emptyText: 'Brak ukończonych zadań w tym widoku.',
     },
   }[id];
@@ -79,25 +79,25 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex flex-col bg-neutral-900/60 rounded-2xl border border-neutral-800 ${
+      className={`flex flex-col bg-slate-100/70 rounded-2xl border border-slate-200 ${
         columnConfig.accentBorder
-      } border-t-2 p-3.5 transition-colors min-h-[550px] ${
-        isOver ? 'bg-neutral-800/60 ring-2 ring-indigo-500/50' : ''
+      } border-t-3 p-3.5 transition-colors min-h-[550px] shadow-2xs ${
+        isOver ? 'bg-indigo-50/80 ring-2 ring-indigo-400' : ''
       }`}
     >
       {/* Column Header */}
-      <div className="flex items-center justify-between pb-3 mb-3 border-b border-neutral-800/80">
+      <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
         <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-neutral-400" />
-          <h3 className="text-sm font-semibold text-neutral-100">{title}</h3>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-medium tabular-nums ${columnConfig.badgeColor}`}>
+          <Icon className="w-4 h-4 text-slate-500" />
+          <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-semibold tabular-nums ${columnConfig.badgeColor}`}>
             {tasks.length}
           </span>
         </div>
 
         <button
           onClick={() => onOpenNewTaskModalWithStatus(id)}
-          className="p-1 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 transition-colors"
+          className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
           title={`Dodaj zadanie do: ${title}`}
         >
           <Plus className="w-4 h-4" />
@@ -122,11 +122,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         })}
 
         {tasks.length === 0 && (
-          <div className="h-36 border border-dashed border-neutral-800 rounded-xl flex flex-col items-center justify-center p-4 text-center text-xs text-neutral-500">
+          <div className="h-36 border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center p-4 text-center text-xs text-slate-500 bg-white/50">
             <p className="max-w-[180px]">{columnConfig.emptyText}</p>
             <button
               onClick={() => onOpenNewTaskModalWithStatus(id)}
-              className="mt-2 text-indigo-400 hover:text-indigo-300 font-medium inline-flex items-center gap-1"
+              className="mt-2 text-indigo-600 hover:text-indigo-700 font-medium inline-flex items-center gap-1 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               Dodaj zadanie
@@ -138,7 +138,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       {/* Quick Add at bottom */}
       <button
         onClick={() => onOpenNewTaskModalWithStatus(id)}
-        className="mt-3 py-2 px-3 border border-dashed border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/80 rounded-xl text-xs font-medium text-neutral-400 hover:text-neutral-200 transition-colors flex items-center justify-center gap-1.5"
+        className="mt-3 py-2 px-3 border border-dashed border-slate-300 hover:border-slate-400 hover:bg-white rounded-xl text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
       >
         <Plus className="w-3.5 h-3.5" />
         Dodaj nowe zadanie

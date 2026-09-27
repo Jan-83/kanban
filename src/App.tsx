@@ -24,6 +24,7 @@ import {
 } from './utils/storage';
 import { scanTasksForDueNotifications } from './utils/notificationEngine';
 import { evaluateDueDate } from './utils/dateUtils';
+import { exportTasksToCSV } from './utils/githubExport';
 import { Navbar } from './components/Navbar';
 import { KanbanBoard } from './components/KanbanBoard';
 import { TaskListView } from './components/TaskListView';
@@ -217,6 +218,15 @@ export default function App() {
     }
   };
 
+  const handleExportCSV = useCallback(() => {
+    if (tasks.length === 0) {
+      showToast('Brak zadań do wyeksportowania', 'info');
+      return;
+    }
+    exportTasksToCSV(tasks, teamMembers);
+    showToast(`Pomyślnie wyeksportowano ${tasks.length} zadań do pliku CSV!`, 'success');
+  }, [tasks, teamMembers, showToast]);
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans">
       {/* Top Navigation Bar */}
@@ -225,6 +235,7 @@ export default function App() {
         setActiveTab={setActiveTab}
         onOpenNewTaskModal={() => handleOpenNewTaskModal('todo')}
         onToggleNotifications={() => setIsNotificationsOpen(!isNotificationsOpen)}
+        onExportCSV={handleExportCSV}
         notifications={notifications}
         isNotificationsOpen={isNotificationsOpen}
         overdueCount={overdueCount}
@@ -266,6 +277,7 @@ export default function App() {
             onMoveTaskStatus={handleMoveTaskStatus}
             onOpenNewTaskModalWithStatus={handleOpenNewTaskModal}
             onOpenGitHubModal={() => setActiveTab('github')}
+            onExportCSV={handleExportCSV}
           />
         )}
 
@@ -277,6 +289,7 @@ export default function App() {
             onDeleteTask={handleDeleteTask}
             onMoveTaskStatus={handleMoveTaskStatus}
             onOpenNewTaskModal={() => handleOpenNewTaskModal('todo')}
+            onExportCSV={handleExportCSV}
           />
         )}
 

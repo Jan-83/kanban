@@ -8,7 +8,8 @@ import {
   Plus, 
   Bell, 
   CheckCircle2, 
-  AlertTriangle 
+  AlertTriangle,
+  FileSpreadsheet
 } from 'lucide-react';
 import { ActiveTab, AppNotification } from '../types/kanban';
 
@@ -17,6 +18,7 @@ interface NavbarProps {
   setActiveTab: (tab: ActiveTab) => void;
   onOpenNewTaskModal: () => void;
   onToggleNotifications: () => void;
+  onExportCSV: () => void;
   notifications: AppNotification[];
   isNotificationsOpen: boolean;
   overdueCount: number;
@@ -28,6 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   onOpenNewTaskModal,
   onToggleNotifications,
+  onExportCSV,
   notifications,
   isNotificationsOpen,
   overdueCount,
@@ -51,7 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
-                  KanbanFlow
+                  Strona Deli Smart Space
                   <span className="text-xs font-mono font-medium px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 border border-neutral-700">
                     GitHub
                   </span>
@@ -148,6 +151,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                 )}
               </button>
             </div>
+
+            {/* Export CSV Button */}
+            <button
+              onClick={onExportCSV}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-neutral-300 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 rounded-lg transition-colors whitespace-nowrap"
+              title="Eksportuj wszystkie zadania do arkusza kalkulacyjnego CSV"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Eksport CSV</span>
+            </button>
 
             {/* Quick Add Task Button */}
             <button

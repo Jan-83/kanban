@@ -9,7 +9,8 @@ import {
   PlayCircle, 
   Edit3, 
   Trash2, 
-  Tag 
+  Tag,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Task, TeamMember, TaskStatus, TaskPriority } from '../types/kanban';
 import { evaluateDueDate } from '../utils/dateUtils';
@@ -21,6 +22,7 @@ interface TaskListViewProps {
   onDeleteTask: (taskId: string) => void;
   onMoveTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
   onOpenNewTaskModal: () => void;
+  onExportCSV: () => void;
 }
 
 export const TaskListView: React.FC<TaskListViewProps> = ({
@@ -30,6 +32,7 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
   onDeleteTask,
   onMoveTaskStatus,
   onOpenNewTaskModal,
+  onExportCSV,
 }) => {
   const [sortField, setSortField] = useState<'dueDate' | 'priority' | 'status' | 'title'>('dueDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -100,13 +103,24 @@ export const TaskListView: React.FC<TaskListViewProps> = ({
           </span>
         </div>
 
-        <button
-          onClick={onOpenNewTaskModal}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Dodaj zadanie
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onExportCSV}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/60 rounded-lg border border-emerald-800/80 transition-colors"
+            title="Pobierz aktualną listę zadań w formacie CSV"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Eksport CSV</span>
+          </button>
+
+          <button
+            onClick={onOpenNewTaskModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Dodaj zadanie
+          </button>
+        </div>
       </div>
 
       {/* Task Table */}

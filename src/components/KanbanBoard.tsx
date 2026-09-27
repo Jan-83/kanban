@@ -6,7 +6,8 @@ import {
   Clock, 
   CheckCircle2, 
   RotateCcw, 
-  GitBranch 
+  GitBranch,
+  FileSpreadsheet
 } from 'lucide-react';
 import { Task, TeamMember, TaskStatus, TaskPriority } from '../types/kanban';
 import { KanbanColumn } from './KanbanColumn';
@@ -20,6 +21,7 @@ interface KanbanBoardProps {
   onMoveTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
   onOpenNewTaskModalWithStatus: (status: TaskStatus) => void;
   onOpenGitHubModal: () => void;
+  onExportCSV: () => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -30,6 +32,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onMoveTaskStatus,
   onOpenNewTaskModalWithStatus,
   onOpenGitHubModal,
+  onExportCSV,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -261,10 +264,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </button>
           )}
 
+          {/* Export CSV Report Button */}
+          <button
+            onClick={onExportCSV}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:text-white bg-emerald-950/40 hover:bg-emerald-900/60 rounded-lg border border-emerald-800/80 transition-colors ml-auto"
+            title="Eksportuj zadania do pliku arkusza kalkulacyjnego (.csv)"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Raport CSV</span>
+          </button>
+
           {/* GitHub Quick Button */}
           <button
             onClick={onOpenGitHubModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:text-white bg-neutral-800 hover:bg-neutral-700/80 rounded-lg border border-neutral-700 transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-300 hover:text-white bg-neutral-800 hover:bg-neutral-700/80 rounded-lg border border-neutral-700 transition-colors"
           >
             <GitBranch className="w-3.5 h-3.5 text-indigo-400" />
             GitHub Hub

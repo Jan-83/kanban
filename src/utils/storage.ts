@@ -4,7 +4,7 @@ const STORAGE_KEYS = {
   TASKS: 'kanban_tasks_v1',
   MEMBERS: 'kanban_members_v1',
   NOTIFICATIONS: 'kanban_notifications_v1',
-  GITHUB: 'kanban_github_v1',
+  GITHUB: 'kanban_github_v3',
   SETTINGS: 'kanban_settings_v1',
 };
 
@@ -168,8 +168,8 @@ export const INITIAL_TASKS: Task[] = [
 ];
 
 export const INITIAL_GITHUB_CONFIG: GitHubRepoConfig = {
-  repoName: 'kanban-flow-workspace',
-  owner: 'dareckimaj',
+  repoName: 'kanban',
+  owner: 'daromajowy',
   branch: 'main',
   isConnected: true,
   lastSyncedAt: new Date().toISOString(),

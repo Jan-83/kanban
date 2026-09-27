@@ -1,8 +1,8 @@
 import { Task, TeamMember, AppNotification, GitHubRepoConfig } from '../types/kanban';
 
 const STORAGE_KEYS = {
-  TASKS: 'kanban_tasks_v1',
-  MEMBERS: 'kanban_members_v1',
+  TASKS: 'kanban_tasks_v2',
+  MEMBERS: 'kanban_members_v2',
   NOTIFICATIONS: 'kanban_notifications_v1',
   GITHUB: 'kanban_github_v3',
   SETTINGS: 'kanban_settings_v1',
@@ -22,38 +22,36 @@ const getRelativeDateString = (offsetDays: number, hour: number = 18): string =>
 
 export const INITIAL_MEMBERS: TeamMember[] = [
   {
-    id: 'user-darecki',
-    name: 'Dariusz Maj',
+    id: 'user-daro',
+    name: 'Administrator (Daro)',
     email: 'darecki.maj@gmail.com',
-    role: 'Projekt Lead & Architekt',
+    role: 'Projekt Lead & Admin',
     status: 'active',
     color: '#6366F1', // indigo
   },
   {
-    id: 'user-anna',
-    name: 'Anna Kowalska',
-    email: 'anna.kowalska@example.com',
-    role: 'Senior Frontend Developer',
-    avatarUrl: '/src/assets/images/avatar_dev_anna_1790501322469.jpg',
-    status: 'active',
-    color: '#EC4899', // pink
-  },
-  {
-    id: 'user-michal',
-    name: 'Michał Wiśniewski',
-    email: 'michal.wisniewski@example.com',
-    role: 'Full-Stack Developer',
-    avatarUrl: '/src/assets/images/avatar_dev_michal_1790501336825.jpg',
+    id: 'user-janek',
+    name: 'Janek',
+    email: 'janek@deli.pl',
+    role: 'Frontend Developer',
     status: 'active',
     color: '#06B6D4', // cyan
   },
   {
-    id: 'user-zofia',
-    name: 'Zofia Zielińska',
-    email: 'zofia.zielinska@example.com',
-    role: 'UI/UX Designer',
+    id: 'user-marek',
+    name: 'Marek',
+    email: 'marek@deli.pl',
+    role: 'Backend Developer',
     status: 'active',
     color: '#10B981', // emerald
+  },
+  {
+    id: 'user-darek',
+    name: 'Darek',
+    email: 'darek@deli.pl',
+    role: 'Full-Stack Developer',
+    status: 'active',
+    color: '#F59E0B', // amber
   },
 ];
 
@@ -65,7 +63,7 @@ export const INITIAL_TASKS: Task[] = [
     status: 'todo',
     priority: 'urgent',
     dueDate: getRelativeDateString(-1, 14), // Przeterminowane o 1 dzień!
-    assigneeId: 'user-michal',
+    assigneeId: 'user-marek',
     tags: ['Backend', 'Architektura', 'GitHub'],
     subtasks: [
       { id: 'sub-1', title: 'Definicja encji zadań i powiadomień', completed: true },
@@ -83,7 +81,7 @@ export const INITIAL_TASKS: Task[] = [
     status: 'todo',
     priority: 'high',
     dueDate: getRelativeDateString(0, 19), // Dzisiaj o 19:00!
-    assigneeId: 'user-darecki',
+    assigneeId: 'user-daro',
     tags: ['Powiadomienia', 'Frontend', 'Terminy'],
     subtasks: [
       { id: 'sub-4', title: 'Integracja z Web Audio API dla dźwięku', completed: true },
@@ -101,7 +99,7 @@ export const INITIAL_TASKS: Task[] = [
     status: 'in_progress',
     priority: 'high',
     dueDate: getRelativeDateString(1, 16), // Jutro o 16:00!
-    assigneeId: 'user-anna',
+    assigneeId: 'user-janek',
     tags: ['Frontend', 'UI/UX', 'Animacje'],
     subtasks: [
       { id: 'sub-7', title: 'Stan hover nad kolumną docelową', completed: true },
@@ -119,7 +117,7 @@ export const INITIAL_TASKS: Task[] = [
     status: 'in_progress',
     priority: 'medium',
     dueDate: getRelativeDateString(3, 17), // Za 3 dni
-    assigneeId: 'user-zofia',
+    assigneeId: 'user-darek',
     tags: ['Zespół', 'Dostęp', 'Funkcje'],
     subtasks: [
       { id: 'sub-10', title: 'Formularz z walidacją e-mail', completed: true },
@@ -137,7 +135,7 @@ export const INITIAL_TASKS: Task[] = [
     status: 'done',
     priority: 'medium',
     dueDate: getRelativeDateString(-2, 12),
-    assigneeId: 'user-darecki',
+    assigneeId: 'user-daro',
     tags: ['GitHub', 'DevOps', 'Hosting'],
     subtasks: [
       { id: 'sub-13', title: 'Szablon struktury repozytorium', completed: true },

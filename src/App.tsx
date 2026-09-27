@@ -25,6 +25,16 @@ import {
 import { scanTasksForDueNotifications } from './utils/notificationEngine';
 import { evaluateDueDate } from './utils/dateUtils';
 import { exportTasksToCSV } from './utils/githubExport';
+import { 
+  SecurityConfig, 
+  AuthSession, 
+  loadSecurityConfig, 
+  saveSecurityConfig, 
+  loadCurrentSession, 
+  saveCurrentSession, 
+  clearCurrentSession 
+} from './utils/authStorage';
+import { PasswordGate } from './components/PasswordGate';
 import { Navbar } from './components/Navbar';
 import { KanbanBoard } from './components/KanbanBoard';
 import { TaskListView } from './components/TaskListView';
@@ -40,6 +50,10 @@ export default function App() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(loadMembersFromStorage);
   const [notifications, setNotifications] = useState<AppNotification[]>(loadNotificationsFromStorage);
   const [githubConfig, setGitHubConfig] = useState<GitHubRepoConfig>(loadGitHubConfigFromStorage);
+
+  // Security Gate & Session
+  const [securityConfig, setSecurityConfig] = useState<SecurityConfig>(loadSecurityConfig);
+  const [authSession, setAuthSession] = useState<AuthSession | null>(loadCurrentSession);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('board');
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -73,6 +87,22 @@ export default function App() {
   useEffect(() => {
     saveGitHubConfigToStorage(githubConfig);
   }, [githubConfig]);
+
+  useEffect(() => {
+    saveSecurityConfig(securityConfig);
+  }, [securityConfig]);
+
+  const handleLoginSuccess = (session: AuthSession, rememberMe: boolean) => {
+    saveCurrentSession(session, rememberMe);
+    setAuthSession(session);
+    showToast(`Witaj z powrotem, ${session.user.name}!`, 'success');
+  };
+
+  const handleLogout = () => {
+    clearCurrentSession();
+    setAuthSession(null);
+    showToast('Wylogowano pomyślnie. Dostęp zablokowany.', 'info');
+  };
 
   // Automated Deadline Notification Scanner
   const runDeadlineCheck = useCallback((playSound = false) => {
@@ -227,6 +257,16 @@ export default function App() {
     showToast(`Pomyślnie wyeksportowano ${tasks.length} zadań do pliku CSV!`, 'success');
   }, [tasks, teamMembers, showToast]);
 
+  // If gate is enabled and user is not authenticated, show PasswordGate
+  if (securityConfig.isGateEnabled && !authSession) {
+    return (
+      <PasswordGate
+        securityConfig={securityConfig}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       {/* Top Navigation Bar */}
@@ -240,6 +280,8 @@ export default function App() {
         isNotificationsOpen={isNotificationsOpen}
         overdueCount={overdueCount}
         todayCount={todayCount}
+        currentUser={authSession?.user}
+        onLogout={securityConfig.isGateEnabled ? handleLogout : undefined}
       />
 
       {/* Floating Toast Notification */}
@@ -308,6 +350,9 @@ export default function App() {
             tasks={tasks}
             onAddMember={handleAddMember}
             onRemoveMember={handleRemoveMember}
+            securityConfig={securityConfig}
+            onUpdateSecurityConfig={setSecurityConfig}
+            currentUserId={authSession?.user.id}
           />
         )}
 

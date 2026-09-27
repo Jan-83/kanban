@@ -9,7 +9,8 @@ import {
   Bell, 
   CheckCircle2, 
   AlertTriangle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  LogOut
 } from 'lucide-react';
 import { ActiveTab, AppNotification } from '../types/kanban';
 
@@ -23,6 +24,8 @@ interface NavbarProps {
   isNotificationsOpen: boolean;
   overdueCount: number;
   todayCount: number;
+  currentUser?: { name: string; email: string; role: string } | null;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,6 +38,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isNotificationsOpen,
   overdueCount,
   todayCount,
+  currentUser,
+  onLogout,
 }) => {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -171,17 +176,32 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>Dodaj zadanie</span>
             </button>
 
-            {/* User Profile Capsule */}
-            <div className="hidden lg:flex items-center pl-2 ml-1 border-l border-slate-200">
+            {/* User Profile Capsule with Logout */}
+            <div className="flex items-center pl-2 ml-1 border-l border-slate-200 gap-2">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold border border-indigo-200">
-                  DM
+                  {currentUser ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
                 </div>
-                <div className="text-left">
-                  <div className="text-xs font-semibold text-slate-800 leading-tight">Dariusz Maj</div>
-                  <div className="text-[10px] text-slate-500 font-mono leading-tight">darecki.maj@gmail.com</div>
+                <div className="hidden lg:block text-left">
+                  <div className="text-xs font-semibold text-slate-800 leading-tight">
+                    {currentUser ? currentUser.name : 'Administrator (Daro)'}
+                  </div>
+                  <div className="text-[10px] text-slate-500 font-mono leading-tight">
+                    {currentUser ? currentUser.email : 'darecki.maj@gmail.com'}
+                  </div>
                 </div>
               </div>
+
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                  title="Wyloguj i zablokuj dostęp"
+                  aria-label="Wyloguj"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
           </div>

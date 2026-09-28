@@ -1,11 +1,11 @@
 import type { BoardData, BoardStage, Subtask, Task } from '../types/kanban';
 
 export const DEFAULT_STAGES: BoardStage[] = [
-  { id: 'todo', title: 'Do zrobienia', color: '#64748b' },
-  { id: 'in_progress', title: 'W trakcie', color: '#d97706' },
-  { id: 'done', title: 'Zrobione', color: '#0d9488' },
+  { id: 'todo', title: 'Do zrobienia', color: '#6366f1' },
+  { id: 'in_progress', title: 'W trakcie', color: '#f59e0b' },
+  { id: 'done', title: 'Zrobione', color: '#10b981' },
 ];
-export const STAGE_COLORS = ['#64748b', '#d97706', '#0d9488', '#6366f1', '#db2777', '#0284c7'];
+export const STAGE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#db2777', '#0284c7', '#64748b', '#d97706', '#0d9488'];
 export const emptyBoard = (): BoardData => ({ tasks: [], members: [], stages: DEFAULT_STAGES.map(s => ({ ...s })) });
 export const stageTitle = (stages: BoardStage[], id: string) => stages.find(s => s.id === id)?.title ?? id;
 

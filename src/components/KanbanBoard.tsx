@@ -1,328 +1,64 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  Search, 
-  Filter, 
-  AlertTriangle, 
-  Clock, 
-  CheckCircle2, 
-  RotateCcw, 
-  GitBranch,
-  FileSpreadsheet
-} from 'lucide-react';
-import { Task, TeamMember, TaskStatus, TaskPriority } from '../types/kanban';
-import { KanbanColumn } from './KanbanColumn';
+import { useMemo, useState } from 'react';
+import { DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, closestCorners, pointerWithin, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { ListFilter, Plus, Search, X } from 'lucide-react';
+import type { BoardData, Task } from '../types/kanban';
 import { evaluateDueDate } from '../utils/dateUtils';
-
-interface KanbanBoardProps {
-  tasks: Task[];
-  teamMembers: TeamMember[];
-  onEditTask: (task: Task) => void;
-  onDeleteTask: (taskId: string) => void;
-  onMoveTaskStatus: (taskId: string, newStatus: TaskStatus) => void;
-  onOpenNewTaskModalWithStatus: (status: TaskStatus) => void;
-  onOpenGitHubModal: () => void;
-  onExportCSV: () => void;
+import { STAGE_COLORS } from '../utils/board';
+import { KanbanColumn } from './KanbanColumn';
+import { TaskOverlay, PRIORITIES } from './TaskCard';
+interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAddStage: (name: string, color: string) => Promise<boolean>; disabled: boolean; }
+export function KanbanBoard({ data, onEdit, onNew, onMove, onAddStage, disabled }: Props) {
+  const [query, setQuery] = useState('');
+  const [person, setPerson] = useState('');
+  const [priority, setPriority] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [color, setColor] = useState(STAGE_COLORS[3]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  const visible = useMemo(() => data.tasks.filter(t => {
+    const due = evaluateDueDate(t.dueDate, t.status === 'done');
+    return (!query || (t.title + ' ' + t.description + ' ' + t.tags.join(' ')).toLocaleLowerCase('pl').includes(query.toLocaleLowerCase('pl')))
+      && (!person || (person === 'unassigned' ? !t.assigneeId : t.assigneeId === person))
+      && (!priority || priority === t.priority)
+      && (!deadline || (t.status !== 'done' && (deadline === 'overdue' ? due.isOverdue : due.isToday)));
+  }), [data.tasks, query, person, priority, deadline]);
+  const activeTask = data.tasks.find(t => t.id === activeId);
+  const drop = ({ active, over }: DragEndEvent) => {
+    setActiveId(null);
+    if (!over || over.id === active.id || disabled) return;
+    const taskId = String(active.id).slice(5);
+    const task = data.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    if (String(over.id).startsWith('stage:')) { onMove(taskId, String(over.id).slice(6)); return; }
+    const target = data.tasks.find(t => t.id === String(over.id).slice(5));
+    if (!target) return;
+    const peers = data.tasks.filter(t => t.status === target.status);
+    const sourceIndex = peers.findIndex(t => t.id === taskId);
+    const targetIndex = peers.findIndex(t => t.id === target.id);
+    const before = sourceIndex >= 0 && sourceIndex < targetIndex ? peers[targetIndex + 1]?.id : target.id;
+    onMove(taskId, target.status, before);
+  };
+  return <>
+    <div className="board-toolbar"><label className="search-field"><Search size={16} /><input aria-label="Szukaj zadań" placeholder="Szukaj zadań, tagów…" value={query} onChange={e => setQuery(e.target.value)} /></label><span className="filter-icon"><ListFilter size={16} /></span>
+      <select aria-label="Filtr osoby" value={person} onChange={e => setPerson(e.target.value)}><option value="">Wszystkie osoby</option><option value="unassigned">Nieprzypisane</option>{data.members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+      <select aria-label="Filtr priorytetu" value={priority} onChange={e => setPriority(e.target.value)}><option value="">Każdy priorytet</option>{Object.entries(PRIORITIES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select>
+      <select aria-label="Filtr terminu" value={deadline} onChange={e => setDeadline(e.target.value)}><option value="">Każdy termin</option><option value="overdue">Po terminie</option><option value="today">Na dziś</option></select>
+      {(query || person || priority || deadline) && <button className="icon-button" aria-label="Wyczyść filtry" onClick={() => { setQuery(''); setPerson(''); setPriority(''); setDeadline(''); }}><X size={16} /></button>}
+      <button className="button stage-button" onClick={() => setAdding(!adding)} disabled={disabled || data.stages.length >= 20}><Plus size={15} />Dodaj etap</button>
+    </div>
+    {adding && <form className="stage-form" onSubmit={async e => { e.preventDefault(); if (await onAddStage(name, color)) { setAdding(false); setName(''); } }}><label>Nazwa etapu<input aria-label="Nazwa etapu" value={name} onChange={e => setName(e.target.value)} maxLength={48} placeholder="np. Do sprawdzenia" required autoFocus /></label><fieldset className="stage-colors"><legend>Kolor</legend>{STAGE_COLORS.map(c => <label key={c} title={c} style={{ background: c }}><input type="radio" name="stage-color" value={c} checked={c === color} onChange={() => setColor(c)} aria-label={'Kolor ' + c} /></label>)}</fieldset><button className="button primary" disabled={disabled}>Dodaj etap do tablicy</button><button type="button" className="icon-button" aria-label="Anuluj dodawanie etapu" onClick={() => setAdding(false)}><X size={18} /></button></form>}
+    <DndContext sensors={sensors} collisionDetection={args => {
+      const hits = pointerWithin(args);
+      const cards = hits.filter(h => String(h.id).startsWith('task:'));
+      return cards.length ? cards : hits.length ? hits : closestCorners(args);
+    }} onDragStart={({ active }) => setActiveId(String(active.id).slice(5))} onDragCancel={() => setActiveId(null)} onDragEnd={drop} accessibility={{ screenReaderInstructions: { draggable: 'Spacja rozpoczyna przenoszenie. Strzałki wybierają miejsce. Spacja zatwierdza, Escape anuluje.' } }}>
+      <div className="board-scroll"><div className="kanban-grid" style={{ gridTemplateColumns: 'repeat(' + data.stages.length + ', minmax(268px, 1fr))' }}>{data.stages.map(stage => <KanbanColumn key={stage.id} stage={stage} stages={data.stages} tasks={visible.filter(t => t.status === stage.id)} total={data.tasks.filter(t => t.status === stage.id).length} members={data.members} onNew={onNew} onEdit={onEdit} onMove={onMove} disabled={disabled} />)}</div></div>
+      <DragOverlay>{activeTask && <TaskOverlay task={activeTask} teamMembers={data.members} stages={data.stages} onEdit={onEdit} onMove={onMove} />}</DragOverlay>
+    </DndContext>
+    <div className="board-foot"><span>{visible.length} z {data.tasks.length} zadań</span><span>Przeciągnij kafelek za uchwyt · Spacja + strzałki na klawiaturze</span></div>
+  </>;
 }
 
-export const KanbanBoard: React.FC<KanbanBoardProps> = ({
-  tasks,
-  teamMembers,
-  onEditTask,
-  onDeleteTask,
-  onMoveTaskStatus,
-  onOpenNewTaskModalWithStatus,
-  onOpenGitHubModal,
-  onExportCSV,
-}) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
-  const [deadlineFilter, setDeadlineFilter] = useState<string>('all');
-
-  // Stats calculation
-  const stats = useMemo(() => {
-    let overdue = 0;
-    let today = 0;
-    let todoCount = 0;
-    let inProgressCount = 0;
-    let doneCount = 0;
-
-    tasks.forEach((t) => {
-      if (t.status === 'todo') todoCount++;
-      if (t.status === 'in_progress') inProgressCount++;
-      if (t.status === 'done') doneCount++;
-
-      if (t.status !== 'done' && t.dueDate) {
-        const evalStatus = evaluateDueDate(t.dueDate, false);
-        if (evalStatus.isOverdue) overdue++;
-        if (evalStatus.isToday) today++;
-      }
-    });
-
-    return {
-      total: tasks.length,
-      overdue,
-      today,
-      todoCount,
-      inProgressCount,
-      doneCount,
-    };
-  }, [tasks]);
-
-  // Filtered tasks
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => {
-      // Search text filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchTitle = task.title.toLowerCase().includes(query);
-        const matchDesc = task.description.toLowerCase().includes(query);
-        const matchTags = task.tags.some((tag) => tag.toLowerCase().includes(query));
-        if (!matchTitle && !matchDesc && !matchTags) return false;
-      }
-
-      // Priority filter
-      if (priorityFilter !== 'all' && task.priority !== priorityFilter) {
-        return false;
-      }
-
-      // Assignee filter
-      if (assigneeFilter !== 'all') {
-        if (assigneeFilter === 'unassigned' && task.assigneeId !== null) return false;
-        if (assigneeFilter !== 'unassigned' && task.assigneeId !== assigneeFilter) return false;
-      }
-
-      // Deadline filter
-      if (deadlineFilter !== 'all' && task.status !== 'done') {
-        const evalStatus = evaluateDueDate(task.dueDate, false);
-        if (deadlineFilter === 'overdue' && !evalStatus.isOverdue) return false;
-        if (deadlineFilter === 'today' && !evalStatus.isToday) return false;
-        if (deadlineFilter === 'soon' && !evalStatus.isSoon) return false;
-      }
-
-      return true;
-    });
-  }, [tasks, searchQuery, priorityFilter, assigneeFilter, deadlineFilter]);
-
-  const todoTasks = filteredTasks.filter((t) => t.status === 'todo');
-  const inProgressTasks = filteredTasks.filter((t) => t.status === 'in_progress');
-  const doneTasks = filteredTasks.filter((t) => t.status === 'done');
-
-  const handleDrop = (taskId: string, targetStatus: TaskStatus) => {
-    onMoveTaskStatus(taskId, targetStatus);
-  };
-
-  const hasActiveFilters =
-    searchQuery.trim() !== '' ||
-    priorityFilter !== 'all' ||
-    assigneeFilter !== 'all' ||
-    deadlineFilter !== 'all';
-
-  const resetFilters = () => {
-    setSearchQuery('');
-    setPriorityFilter('all');
-    setAssigneeFilter('all');
-    setDeadlineFilter('all');
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Top Banner / Metrics Overview */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Wszystkie zadania</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-slate-900 mt-0.5">
-              {stats.total}
-            </div>
-          </div>
-          <span className="text-xs font-mono text-slate-400">100%</span>
-        </div>
-
-        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Do zrobienia</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-indigo-600 mt-0.5">
-              {stats.todoCount}
-            </div>
-          </div>
-          <span className="text-xs font-mono text-slate-400">
-            {stats.total ? Math.round((stats.todoCount / stats.total) * 100) : 0}%
-          </span>
-        </div>
-
-        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">W trakcie</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-amber-600 mt-0.5">
-              {stats.inProgressCount}
-            </div>
-          </div>
-          <span className="text-xs font-mono text-slate-400">
-            {stats.total ? Math.round((stats.inProgressCount / stats.total) * 100) : 0}%
-          </span>
-        </div>
-
-        <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-500 font-medium">Zrobione</div>
-            <div className="text-xl font-bold font-mono tabular-nums text-emerald-600 mt-0.5">
-              {stats.doneCount}
-            </div>
-          </div>
-          <span className="text-xs font-mono text-slate-400">
-            {stats.total ? Math.round((stats.doneCount / stats.total) * 100) : 0}%
-          </span>
-        </div>
-
-        <div className="col-span-2 sm:col-span-1 bg-white border border-rose-200/90 shadow-2xs rounded-xl p-3.5 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-rose-600 font-medium flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Przeterminowane
-            </div>
-            <div className="text-xl font-bold font-mono tabular-nums text-rose-600 mt-0.5">
-              {stats.overdue}
-            </div>
-          </div>
-          {stats.today > 0 && (
-            <div className="text-right">
-              <div className="text-[10px] text-amber-600 font-medium">Na dzisiaj:</div>
-              <div className="text-xs font-bold font-mono text-amber-700">{stats.today}</div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-slate-200/90 shadow-2xs rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Szukaj po tytule, opisie lub tagu..."
-            className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-colors"
-          />
-        </div>
-
-        {/* Filters Group */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Priority filter */}
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            aria-label="Filtruj po priorytecie"
-            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
-          >
-            <option value="all">Wszystkie priorytety</option>
-            <option value="urgent">🔴 Pilny / Krytyczny</option>
-            <option value="high">🟠 Wysoki</option>
-            <option value="medium">🟡 Średni</option>
-            <option value="low">⚪ Niski</option>
-          </select>
-
-          {/* Assignee filter */}
-          <select
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            aria-label="Filtruj po osobie odpowiedzialnej"
-            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
-          >
-            <option value="all">Wszyscy wykonawcy</option>
-            <option value="unassigned">Nieprzypisane</option>
-            {teamMembers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Deadline alert filter */}
-          <select
-            value={deadlineFilter}
-            onChange={(e) => setDeadlineFilter(e.target.value)}
-            aria-label="Filtruj po terminie realizacji"
-            className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
-          >
-            <option value="all">Wszystkie terminy</option>
-            <option value="overdue">⚠️ Tylko przeterminowane</option>
-            <option value="today">⏰ Termin dzisiaj</option>
-            <option value="soon">📅 Wkrótce (do 48h)</option>
-          </select>
-
-          {/* Clear Filters */}
-          {hasActiveFilters && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset filtrów
-            </button>
-          )}
-
-          {/* Export CSV Report Button */}
-          <button
-            onClick={onExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 shadow-2xs transition-colors ml-auto cursor-pointer"
-            title="Eksportuj zadania do pliku arkusza kalkulacyjnego (.csv)"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Raport CSV</span>
-          </button>
-
-          {/* GitHub Quick Button */}
-          <button
-            onClick={onOpenGitHubModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
-          >
-            <GitBranch className="w-3.5 h-3.5 text-indigo-600" />
-            GitHub Hub
-          </button>
-        </div>
-      </div>
-
-      {/* Main Kanban Board: 3 Standard Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <KanbanColumn
-          id="todo"
-          title="Do zrobienia"
-          tasks={todoTasks}
-          teamMembers={teamMembers}
-          onEditTask={onEditTask}
-          onDeleteTask={onDeleteTask}
-          onMoveTaskStatus={onMoveTaskStatus}
-          onOpenNewTaskModalWithStatus={onOpenNewTaskModalWithStatus}
-          onDropTask={handleDrop}
-        />
-
-        <KanbanColumn
-          id="in_progress"
-          title="W trakcie"
-          tasks={inProgressTasks}
-          teamMembers={teamMembers}
-          onEditTask={onEditTask}
-          onDeleteTask={onDeleteTask}
-          onMoveTaskStatus={onMoveTaskStatus}
-          onOpenNewTaskModalWithStatus={onOpenNewTaskModalWithStatus}
-          onDropTask={handleDrop}
-        />
-
-        <KanbanColumn
-          id="done"
-          title="Zrobione"
-          tasks={doneTasks}
-          teamMembers={teamMembers}
-          onEditTask={onEditTask}
-          onDeleteTask={onDeleteTask}
-          onMoveTaskStatus={onMoveTaskStatus}
-          onOpenNewTaskModalWithStatus={onOpenNewTaskModalWithStatus}
-          onDropTask={handleDrop}
-        />
-      </div>
-    </div>
-  );
-};

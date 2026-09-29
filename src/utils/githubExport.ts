@@ -1,6 +1,7 @@
-import { Task, TeamMember, GitHubRepoConfig } from '../types/kanban';
+import { Task, TeamMember, GitHubRepoConfig, BoardStage } from '../types/kanban';
+import { DEFAULT_STAGES, stageTitle } from './board';
 
-export function generateGitHubIssuesMarkdown(tasks: Task[], members: TeamMember[]): string {
+export function generateGitHubIssuesMarkdown(tasks: Task[], members: TeamMember[], stages: BoardStage[] = DEFAULT_STAGES): string {
   const lines: string[] = [
     '# Lista Zadań Projektu (Format GitHub Issues)',
     `> Wygenerowano automatycznie z KanbanFlow dla repozytorium`,
@@ -26,7 +27,7 @@ export function generateGitHubIssuesMarkdown(tasks: Task[], members: TeamMember[
     };
 
     lines.push(`## #${index + 1} - ${task.title}`);
-    lines.push(`- **Status:** ${statusMap[task.status]}`);
+    lines.push(`- **Status:** ${stageTitle(stages, task.status)}`);
     lines.push(`- **Priorytet:** ${priorityMap[task.priority]}`);
     lines.push(`- **Termin realizacji:** ${task.dueDate || 'Brak'}`);
     lines.push(`- **Odpowiedzialny:** ${assigneeStr}`);
@@ -159,7 +160,7 @@ export function downloadFile(content: string, filename: string, mimeType: string
 /**
  * Exports tasks to CSV format with UTF-8 BOM for Microsoft Excel, Google Sheets, and LibreOffice.
  */
-export function exportTasksToCSV(tasks: Task[], members: TeamMember[]): void {
+export function exportTasksToCSV(tasks: Task[], members: TeamMember[], stages: BoardStage[] = DEFAULT_STAGES): void {
   const headers = [
     'ID Zadania',
     'Tytuł',
@@ -179,7 +180,8 @@ export function exportTasksToCSV(tasks: Task[], members: TeamMember[]): void {
 
   const escapeCSV = (field: string | number | undefined | null): string => {
     if (field === undefined || field === null) return '""';
-    const stringValue = String(field);
+    const raw = String(field);
+    const stringValue = /^[\s]*[=+@-]/.test(raw) ? "'" + raw : raw;
     const escaped = stringValue.replace(/"/g, '""');
     return `"${escaped}"`;
   };
@@ -208,7 +210,7 @@ export function exportTasksToCSV(tasks: Task[], members: TeamMember[]): void {
     const row = [
       escapeCSV(task.id),
       escapeCSV(task.title),
-      escapeCSV(statusMap[task.status] || task.status),
+      escapeCSV(stageTitle(stages, task.status)),
       escapeCSV(priorityMap[task.priority] || task.priority),
       escapeCSV(task.dueDate || 'Brak terminu'),
       escapeCSV(assignee ? assignee.name : 'Nieprzypisana'),

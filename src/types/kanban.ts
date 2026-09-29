@@ -1,6 +1,11 @@
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
-export type TaskStatus = 'todo' | 'in_progress' | 'done';
+export type TaskStatus = string;
+
+export interface BoardStage { id: string; title: string; color: string; }
+export interface BoardData { tasks: Task[]; members: TeamMember[]; stages: BoardStage[]; }
+export interface BoardSnapshot { data: BoardData; revision: number; }
+export interface BoardUser { id: string; name: string; email: string; role: 'admin' | 'member'; }
 
 export interface Subtask {
   id: string;

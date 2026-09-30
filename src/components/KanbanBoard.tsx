@@ -7,8 +7,8 @@ import { evaluateDueDate } from '../utils/dateUtils';
 import { STAGE_COLORS } from '../utils/board';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskOverlay, PRIORITIES } from './TaskCard';
-interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAddStage: (name: string, color: string) => Promise<boolean>; disabled: boolean; }
-export function KanbanBoard({ data, onEdit, onNew, onMove, onAddStage, disabled }: Props) {
+interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAssign?: (id: string, assigneeId: string | null) => void; onAddStage: (name: string, color: string) => Promise<boolean>; disabled: boolean; }
+export function KanbanBoard({ data, onEdit, onNew, onMove, onAssign, onAddStage, disabled }: Props) {
   const [query, setQuery] = useState('');
   const [person, setPerson] = useState('');
   const [priority, setPriority] = useState('');
@@ -55,7 +55,7 @@ export function KanbanBoard({ data, onEdit, onNew, onMove, onAddStage, disabled 
       const cards = hits.filter(h => String(h.id).startsWith('task:'));
       return cards.length ? cards : hits.length ? hits : closestCorners(args);
     }} onDragStart={({ active }) => setActiveId(String(active.id).slice(5))} onDragCancel={() => setActiveId(null)} onDragEnd={drop} accessibility={{ screenReaderInstructions: { draggable: 'Spacja rozpoczyna przenoszenie. Strzałki wybierają miejsce. Spacja zatwierdza, Escape anuluje.' } }}>
-      <div className="board-scroll"><div className="kanban-grid" style={{ gridTemplateColumns: 'repeat(' + data.stages.length + ', minmax(268px, 1fr))' }}>{data.stages.map(stage => <KanbanColumn key={stage.id} stage={stage} stages={data.stages} tasks={visible.filter(t => t.status === stage.id)} total={data.tasks.filter(t => t.status === stage.id).length} members={data.members} onNew={onNew} onEdit={onEdit} onMove={onMove} disabled={disabled} />)}</div></div>
+      <div className="board-scroll"><div className="kanban-grid" style={{ gridTemplateColumns: 'repeat(' + data.stages.length + ', minmax(268px, 1fr))' }}>{data.stages.map(stage => <KanbanColumn key={stage.id} stage={stage} stages={data.stages} tasks={visible.filter(t => t.status === stage.id)} total={data.tasks.filter(t => t.status === stage.id).length} members={data.members} onNew={onNew} onEdit={onEdit} onMove={onMove} onAssign={onAssign} disabled={disabled} />)}</div></div>
       <DragOverlay>{activeTask && <TaskOverlay task={activeTask} teamMembers={data.members} stages={data.stages} onEdit={onEdit} onMove={onMove} />}</DragOverlay>
     </DndContext>
     <div className="board-foot"><span>{visible.length} z {data.tasks.length} zadań</span><span>Przeciągnij kafelek za uchwyt · Spacja + strzałki na klawiaturze</span></div>

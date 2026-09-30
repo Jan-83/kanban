@@ -91,6 +91,13 @@ h2 { font-size: 14px; font-weight: 700; }
 .card-footer { display: flex; align-items: center; gap: 8px; border-top: 1px solid #f0f2f4; padding-top: 9px; margin-top: 11px; }
 .card-date, .card-checklist { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; color: #89959d; }
 .card-date.overdue { color: #bf6b5b; }
+.card-assignee-pill { position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px 2px 3px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 20px; cursor: pointer; max-width: 140px; transition: background .15s, border-color .15s; }
+.card-assignee-pill:hover { background: #f1f5f9; border-color: #cbd5e1; }
+.card-assignee-pill:has(.card-assignee-select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.card-assignee-pill .avatar.small { margin-left: 0; width: 20px; height: 20px; font-size: 8px; flex-shrink: 0; }
+.card-assignee-name { font-size: 10px; font-weight: 500; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-assignee-arrow { color: #94a3b8; flex-shrink: 0; }
+.card-assignee-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border-radius: 20px; }
 .card-stage { border: 0; border-radius: 0; border-top: 1px solid #f3f5f6; background: transparent; color: #8a979e; margin-top: 7px; width: 100%; font-size: 9px; padding: 5px 0 0; }
 .column-add { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8f9aa2; border: none; background: transparent; width: 100%; padding: 14px 2px 4px; }
 .column-add:hover { color: var(--accent); }

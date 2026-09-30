@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Cloud, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import type { ActiveTab, BoardData, BoardSnapshot, BoardUser, Task } from '../types/kanban';
-import { addStage, assertDraftCurrent, moveTask, parseBoard, readLegacyBoard } from '../utils/board';
+import { addStage, assertDraftCurrent, assignTask, moveTask, parseBoard, readLegacyBoard } from '../utils/board';
 import { AccessDeniedError, RevisionConflictError, loadBoard, saveBoard } from '../utils/supabase';
 import { evaluateDueDate } from '../utils/dateUtils';
 import { Navbar } from './Navbar';
@@ -90,6 +90,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote }:
       : [{ ...draft, id: crypto.randomUUID(), createdAt: now, updatedAt: now }, ...data.tasks] };
   });
   const move = (id: string, stage: string, before?: string) => { void commit(data => moveTask(data, id, stage, before)); };
+  const assign = (id: string, assigneeId: string | null) => { void commit(data => assignTask(data, id, assigneeId)); };
   const importLegacy = async () => {
     try {
       const legacy = readLegacyBoard();
@@ -111,8 +112,8 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote }:
       <div className="page-heading"><div><p className="eyebrow">DELI SMART SPACE</p><h1>{titles[tab]}</h1></div><div className="heading-details"><div className="project-stats"><span><b>{(data?.tasks.length ?? 0) - completed}</b> aktywnych</span><span><b>{completed}</b> zrobionych</span>{overdue > 0 && <span className="overdue"><b>{overdue}</b> po terminie</span>}</div><span className="sync-status" role="status" title={'Ostatnie sprawdzenie: ' + new Date(clock).toLocaleTimeString('pl')} >{busy ? <><LoaderCircle size={13} className="spin" />Zapisywanie</> : data ? <><Check size={13} />Zapisano</> : <><Cloud size={13} />Wczytywanie</>}</span><button className="icon-button" aria-label="Odśwież tablicę" disabled={busy} onClick={() => { setMessage(''); void refresh(); }}><RefreshCw size={16} /></button></div></div>
       {message && <div className="notice error workspace-notice" role="alert"><span>{message}</span><button className="icon-button" aria-label="Zamknij komunikat" onClick={() => setMessage('')}><X size={16} /></button></div>}
       {!data ? <div className="empty-state">{message ? 'Tablica nie została wczytana. Użyj przycisku odświeżania.' : 'Wczytywanie wspólnej tablicy…'}</div> : <>
-        {tab === 'board' && <KanbanBoard data={data} onEdit={edit} onNew={newTask} onMove={move} disabled={busy} onAddStage={(name, color) => commit(d => addStage(d, name, color, crypto.randomUUID()))} />}
-        {tab === 'list' && <TaskListView data={data} onEdit={edit} onMove={move} busy={busy} />}
+        {tab === 'board' && <KanbanBoard data={data} onEdit={edit} onNew={newTask} onMove={move} onAssign={assign} disabled={busy} onAddStage={(name, color) => commit(d => addStage(d, name, color, crypto.randomUUID()))} />}
+        {tab === 'list' && <TaskListView data={data} onEdit={edit} onMove={move} onAssign={assign} busy={busy} />}
         {tab === 'timeline' && <TimelineCalendarView data={data} onEdit={edit} busy={busy} />}
         {tab === 'team' && <TeamView data={data} busy={busy} onAdd={m => commit(d => ({ ...d, members: [...d.members, m] }))} onRemove={id => commit(d => ({ ...d, members: d.members.filter(m => m.id !== id), tasks: d.tasks.map(t => t.assigneeId === id ? { ...t, assigneeId: null } : t) }))} />}
         {tab === 'github' && <GitHubModal data={data} busy={busy} canImport={user.role === 'admin'} onImport={importLegacy} />}

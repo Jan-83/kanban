@@ -42,6 +42,15 @@ export function moveTask(data: BoardData, taskId: string, stageId: string, befor
   return { ...data, tasks };
 }
 
+export function assignTask(data: BoardData, taskId: string, assigneeId: string | null): BoardData {
+  const task = data.tasks.find(t => t.id === taskId);
+  if (!task) return data;
+  const validAssignee = assigneeId && data.members.some(m => m.id === assigneeId) ? assigneeId : null;
+  if (task.assigneeId === validAssignee) return data;
+  const now = new Date().toISOString();
+  return { ...data, tasks: data.tasks.map(t => t.id === taskId ? { ...t, assigneeId: validAssignee, updatedAt: now } : t) };
+}
+
 const isObject = (v: unknown): v is Record<string, any> => !!v && typeof v === 'object' && !Array.isArray(v);
 const text = (v: unknown, max = 10000): v is string => typeof v === 'string' && v.length <= max;
 const unique = (items: { id: string }[]) => new Set(items.map(i => i.id)).size === items.length;

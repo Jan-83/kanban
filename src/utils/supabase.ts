@@ -16,6 +16,7 @@ export const authConfigured = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url
 // membership rows; Postgres RLS checks every request independently of this UI.
 export const supabase = authConfigured ? createClient(url, key, {
   auth: { ...AUTH_OPTIONS, storage: window.sessionStorage },
+  global: { fetch: (input, init) => fetch(input, init) },
 }) : null;
 
 export class AccessDeniedError extends Error {}

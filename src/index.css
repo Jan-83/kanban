@@ -162,6 +162,41 @@ input[type=checkbox] { accent-color: var(--accent); }
 .person-row strong { font-size: 12px; font-weight: 600; }
 .person-row p { font-size: 10px; color: var(--muted); margin-top: 4px; }
 .person-row .count { margin-left: auto; }
+.person-actions { display: inline-flex; align-items: center; gap: 4px; }
+.person-edit-form { display: grid; gap: 12px; width: 100%; border-top: 1px solid var(--soft-border); padding: 14px 0; }
+.person-edit-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.person-edit-label { display: grid; gap: 4px; font-size: 11px; color: var(--muted); font-weight: 500; }
+.person-edit-label input { width: 100%; font-size: 12px; padding: 7px 9px; }
+.person-edit-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.button.compact { padding: 5px 10px; font-size: 11px; line-height: 15px; }
+.button.secondary { background: var(--surface-subtle); border-color: var(--border); color: var(--text); }
+.button.secondary:hover:not(:disabled) { background: var(--hover); }
+
+/* Status Comments & Closing Status */
+.field-label-prominent { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: var(--text); text-transform: uppercase; margin-bottom: 2px; }
+.field-sublabel { display: block; font-weight: 400; font-size: 11px; color: var(--muted); text-transform: none; letter-spacing: normal; margin-top: 3px; margin-bottom: 7px; }
+.section-title-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.hint-small { font-size: 10px; }
+.status-comments-box { background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 9px; padding: 11px; display: grid; gap: 10px; }
+.status-comments-history { display: grid; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.status-comment-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 7px; padding: 8px 11px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03); }
+.status-comment-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 5px; }
+.status-comment-author { font-size: 11px; font-weight: 600; color: var(--text); }
+.status-comment-time { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.delete-comment-btn { margin-left: auto; color: var(--muted); padding: 2px 4px; border-radius: 4px; }
+.delete-comment-btn:hover { color: var(--danger); background: var(--danger-bg); }
+.status-comment-content { font-size: 12px; color: var(--text); white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+.status-comment-empty { font-size: 11px; color: var(--muted); font-style: italic; margin: 2px 0 4px; }
+.status-comment-composer { display: grid; gap: 7px; padding-top: 6px; border-top: 1px dashed var(--border); }
+.status-comment-composer textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; width: 100%; box-sizing: border-box; font-family: inherit; resize: vertical; }
+.status-comment-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.composer-tip { font-size: 10px; }
+.status-add-btn { font-size: 11px; padding: 6px 12px; }
+.closing-status-box { background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 9px; padding: 11px; display: grid; gap: 6px; }
+.closing-status-box textarea { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 12px; width: 100%; box-sizing: border-box; font-family: inherit; resize: vertical; }
+.card-comment-indicator { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 500; color: var(--muted); background: var(--hover); border: 1px solid var(--border); border-radius: 10px; padding: 2px 6px; }
+.table-title-cell { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.table-closing-text { font-size: 10px; color: var(--success); margin-top: 3px; font-weight: 500; }
 .export-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; }
 .export-grid .panel > svg { color: var(--success); margin-bottom: 17px; }
 .empty-state { text-align: center; padding: 65px 20px; color: var(--muted); font-size: 13px; }

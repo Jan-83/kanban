@@ -54,6 +54,20 @@ test('Postgres authorization boundary and concurrent writes', async t => {
         await denied(save(board, 0), '40001');
       });
     });
+    await t.test('member saves comment history and closing status through the existing revision RPC', async () => {
+      await as('authenticated', alice, async () => {
+        const data = { ...emptyBoard(), tasks: [{ id: 'status-task', title: 'Odbiór', description: '', status: 'done', priority: 'medium', dueDate: '', assigneeId: null, tags: [], subtasks: [],
+          statusComments: [{ id: 'comment-1', text: 'Testy zakończone.', timestamp: '2026-10-05T13:15:00.000Z', author: 'Alice' }],
+          closingStatus: 'Wdrożono i uzyskano akceptację.', createdAt: '2026-10-05', updatedAt: '2026-10-05' }] };
+        assert.equal(Number((await save(board, 0, data)).rows[0].revision), 1);
+        assert.deepEqual((await db.query<any>('select data from public.kanban_boards')).rows[0].data, data);
+        const changed = structuredClone(data);
+        changed.tasks[0].statusComments.push({ id: 'comment-2', text: 'Potwierdzono odbiór.', timestamp: '2026-10-05T14:00:00.000Z', author: 'Alice' });
+        assert.equal(Number((await save(board, 1, changed)).rows[0].revision), 2);
+        assert.deepEqual((await db.query<any>('select data from public.kanban_boards')).rows[0].data, changed);
+        await denied(save(board, 1, data), '40001');
+      });
+    });
     await t.test('direct table writes and membership escalation are denied', async () => {
       for (const query of [
         "update public.kanban_members set role='admin'",

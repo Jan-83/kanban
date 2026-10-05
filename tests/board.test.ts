@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addStage, assertDraftCurrent, emptyBoard, moveStage, moveTask, parseBoard, parseLegacyBoard, setStageColor } from '../src/utils/board';
+import { addStage, assertDraftCurrent, emptyBoard, moveStage, moveTask, assignTask, parseBoard, parseLegacyBoard, setStageColor } from '../src/utils/board';
 import { INITIAL_TASKS, INITIAL_MEMBERS } from '../src/utils/storage';
 import { clearLegacyAuthentication } from '../src/utils/authStorage';
 import { generateGitHubIssuesMarkdown } from '../src/utils/githubExport';
 import type { BoardData, Task } from '../src/types/kanban';
-const task = (id: string, status = 'todo'): Task => ({ id, title: id, description: '', status, priority: 'medium', dueDate: '', assigneeId: null, tags: [], subtasks: [], createdAt: '2026-09-29', updatedAt: '2026-09-29' });
+const task = (id: string, status = 'todo'): Task => ({ id, title: id, description: '', status, priority: 'medium', dueDate: '', assigneeId: null, tags: [], subtasks: [], statusComments: [], closingStatus: '', createdAt: '2026-09-29', updatedAt: '2026-09-29' });
 test('custom stage survives serialization and is inserted before Done', () => {
   const data = addStage(emptyBoard(), '  Do akceptacji  ', '#6366f1', 'review');
   assert.deepEqual(data.stages.map(s => s.id), ['todo', 'in_progress', 'review', 'done']);
@@ -86,5 +86,50 @@ test('remove forged and default legacy auth while preserving board data for expl
   assert.deepEqual([...session.keys()], ['kanban_tasks_v2']);
   (globalThis as any).window = { get localStorage() { throw new Error('blocked'); }, get sessionStorage() { throw new Error('blocked'); } };
   assert.doesNotThrow(clearLegacyAuthentication);
+});
+
+test('statusComments and closingStatus are parsed and preserved', () => {
+  const taskWithDetails: Task = {
+    ...task('task-with-status'),
+    statusComments: [
+      { id: 'c1', text: 'Pierwszy komentarz o postępie', timestamp: '2026-10-05T12:00:00.000Z', author: 'Janek' },
+    ],
+    closingStatus: 'Zadanie zostało w pełni ukończone i przetestowane.',
+  };
+  const parsed = parseBoard({ ...emptyBoard(), tasks: [taskWithDetails] });
+  assert.equal(parsed.tasks[0].statusComments?.length, 1);
+  assert.equal(parsed.tasks[0].statusComments?.[0].text, 'Pierwszy komentarz o postępie');
+  assert.equal(parsed.tasks[0].statusComments?.[0].author, 'Janek');
+  assert.equal(parsed.tasks[0].closingStatus, 'Zadanie zostało w pełni ukończone i przetestowane.');
+  assert.match(generateGitHubIssuesMarkdown(parsed.tasks, [], parsed.stages), /Pierwszy komentarz o postępie/);
+  assert.match(generateGitHubIssuesMarkdown(parsed.tasks, [], parsed.stages), /Status zamknięcia/);
+});
+
+test('old tasks acquire empty status fields without losing existing data', () => {
+  const old = task('legacy');
+  delete old.statusComments;
+  delete old.closingStatus;
+  assert.deepEqual(parseBoard({ ...emptyBoard(), tasks: [old] }).tasks[0], task('legacy'));
+});
+
+test('moving, assigning and serialization keep comment history, timestamps and closing status', () => {
+  const original = { ...emptyBoard(), members: INITIAL_MEMBERS, tasks: [{ ...task('a'),
+    statusComments: [
+      { id: 'c1', text: 'Rozpoczęto testy', timestamp: '2026-10-05T12:00:00.000Z', author: 'Jan' },
+      { id: 'c2', text: 'Testy ukończone', timestamp: '2026-10-05T13:15:00.000Z', author: 'Darek' },
+    ], closingStatus: 'Wdrożono i sprawdzono.' }] };
+  const result = parseBoard(JSON.parse(JSON.stringify(assignTask(moveTask(original, 'a', 'done'), 'a', INITIAL_MEMBERS[0].id))));
+  assert.deepEqual(result.tasks[0].statusComments, original.tasks[0].statusComments);
+  assert.equal(result.tasks[0].closingStatus, original.tasks[0].closingStatus);
+  assert.equal(result.tasks[0].status, 'done');
+  assert.equal(result.tasks[0].assigneeId, INITIAL_MEMBERS[0].id);
+  assert.equal(original.tasks[0].status, 'todo');
+});
+
+test('invalid comment dates, duplicate ids and malformed entries cannot corrupt history', () => {
+  const comment = { id: 'c1', text: 'Test', timestamp: '2026-10-05T12:00:00.000Z' };
+  for (const statusComments of [[{ ...comment, timestamp: 'invalid' }], [comment, comment], [null], [comment, null]]) {
+    assert.throws(() => parseBoard({ ...emptyBoard(), tasks: [{ ...task('a'), statusComments }] }), /Nieprawidłowe dane zadań/);
+  }
 });
 

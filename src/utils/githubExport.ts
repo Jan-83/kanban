@@ -47,6 +47,20 @@ export function generateGitHubIssuesMarkdown(tasks: Task[], members: TeamMember[
       lines.push('');
     }
 
+    if (task.statusComments && task.statusComments.length > 0) {
+      lines.push('### Komentarze o statusie:');
+      task.statusComments.forEach((c) => {
+        lines.push(`- **${c.author || 'Członek zespołu'}** (${c.timestamp}): ${c.text}`);
+      });
+      lines.push('');
+    }
+
+    if (task.closingStatus) {
+      lines.push('### Status zamknięcia:');
+      lines.push(task.closingStatus);
+      lines.push('');
+    }
+
     lines.push('---');
     lines.push('');
   });

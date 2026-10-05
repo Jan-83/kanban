@@ -1,4 +1,4 @@
-import { CalendarDays, CheckSquare, ChevronDown, GripVertical, UserRound } from 'lucide-react';
+import { CalendarDays, CheckSquare, ChevronDown, GripVertical, MessageSquare, UserRound } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
@@ -54,6 +54,7 @@ function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, disa
     </div>}
     <div className="card-footer">
       <span className={due.isOverdue ? 'card-date overdue' : 'card-date'} title={due.badgeText}><CalendarDays size={12} />{task.dueDate ? due.formatted : 'Bez terminu'}</span>
+      {!!task.statusComments?.length && <span className="card-comment-indicator" title={'Komentarze o statusie: ' + task.statusComments.length}><MessageSquare size={11} /><span>{task.statusComments.length}</span></span>}
       {!overlay && <select className="card-stage" aria-label={'Przenieś: ' + task.title} value={task.status} disabled={disabled} onChange={e => onMove(task.id, e.target.value)}>{stages.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select>}
     </div>
   </>;

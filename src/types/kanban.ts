@@ -13,6 +13,13 @@ export interface Subtask {
   completed: boolean;
 }
 
+export interface StatusComment {
+  id: string;
+  text: string;
+  timestamp: string; // ISO string YYYY-MM-DDTHH:mm:ss.sssZ
+  author?: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -23,6 +30,8 @@ export interface Task {
   assigneeId: string | null;
   tags: string[];
   subtasks: Subtask[];
+  statusComments?: StatusComment[];
+  closingStatus?: string;
   createdAt: string;
   updatedAt: string;
   githubIssueNumber?: number;

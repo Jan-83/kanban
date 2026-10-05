@@ -1,4 +1,4 @@
-import type { BoardData, BoardStage, Subtask, Task } from '../types/kanban';
+import type { BoardData, BoardStage, StatusComment, Subtask, Task } from '../types/kanban';
 
 export const DEFAULT_STAGES: BoardStage[] = [
   { id: 'todo', title: 'Do zrobienia', color: '#6366f1' },
@@ -68,13 +68,24 @@ export function parseBoard(value: unknown): BoardData {
     && ['low', 'medium', 'high', 'urgent'].includes(t.priority) && text(t.dueDate, 40) && (!t.dueDate || Number.isFinite(Date.parse(t.dueDate)))
     && (t.assigneeId === null || members.some(m => m.id === t.assigneeId)) && text(t.createdAt, 40) && text(t.updatedAt, 40)
     && Array.isArray(t.tags) && t.tags.length <= 30 && t.tags.every(tag => text(tag, 100))
-    && Array.isArray(t.subtasks) && t.subtasks.length <= 100 && unique(t.subtasks) && t.subtasks.every(s => isObject(s) && id(s.id) && text(s.title, 300) && typeof s.completed === 'boolean')) || !unique(tasks)) throw new Error('Nieprawidłowe dane zadań.');
+    && Array.isArray(t.subtasks) && t.subtasks.length <= 100 && unique(t.subtasks) && t.subtasks.every(s => isObject(s) && id(s.id) && text(s.title, 300) && typeof s.completed === 'boolean')
+    && (t.statusComments === undefined || (Array.isArray(t.statusComments) && t.statusComments.length <= 500 && unique(t.statusComments) && t.statusComments.every(c => isObject(c) && id(c.id) && text(c.text, 5000) && text(c.timestamp, 50) && (c.author === undefined || text(c.author, 120)))))
+    && (t.closingStatus === undefined || text(t.closingStatus, 10000))) || !unique(tasks)) throw new Error('Nieprawidłowe dane zadań.');
   // Unknown properties, old auth metadata and arbitrary avatar URLs are dropped.
   return {
     stages: stages.map(s => ({ id: s.id, title: s.title.trim(), color: s.color })),
     members: members.map(m => ({ id: m.id, name: m.name, email: m.email, role: m.role, color: m.color, status: m.status })),
     tasks: tasks.map(t => ({ id: t.id, title: t.title.trim(), description: t.description, status: t.status, priority: t.priority, dueDate: t.dueDate,
       assigneeId: t.assigneeId, tags: t.tags, subtasks: t.subtasks.map((s: Subtask) => ({ id: s.id, title: s.title, completed: s.completed })),
+      statusComments: Array.isArray(t.statusComments)
+        ? t.statusComments.map((c: StatusComment) => ({
+            id: c.id,
+            text: c.text,
+            timestamp: c.timestamp,
+            ...(c.author ? { author: c.author } : {}),
+          }))
+        : [],
+      closingStatus: typeof t.closingStatus === 'string' ? t.closingStatus : '',
       createdAt: t.createdAt, updatedAt: t.updatedAt, ...(Number.isSafeInteger(t.githubIssueNumber) ? { githubIssueNumber: t.githubIssueNumber } : {}) } as Task)),
   };
 }

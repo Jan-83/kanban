@@ -117,7 +117,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote }:
         {tab === 'timeline' && <TimelineCalendarView data={data} onEdit={edit} busy={busy} />}
         {tab === 'team' && <TeamView data={data} busy={busy} onAdd={m => commit(d => ({ ...d, members: [...d.members, m] }))} onRemove={id => commit(d => ({ ...d, members: d.members.filter(m => m.id !== id), tasks: d.tasks.map(t => t.assigneeId === id ? { ...t, assigneeId: null } : t) }))} onUpdate={m => commit(d => ({ ...d, members: d.members.map(x => x.id === m.id ? m : x) }))} />}
         {tab === 'github' && <GitHubModal data={data} busy={busy} canImport={user.role === 'admin'} onImport={importLegacy} />}
-        <TaskModal isOpen={modal} onClose={() => setModal(false)} onSave={saveTask} onDelete={id => commit(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }))} initialTask={editing} defaultStatus={defaultStage} teamMembers={data.members} stages={data.stages} busy={busy} error={message} />
+        <TaskModal isOpen={modal} onClose={() => setModal(false)} onSave={saveTask} onDelete={id => commit(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }))} initialTask={editing} defaultStatus={defaultStage} teamMembers={data.members} stages={data.stages} busy={busy} error={message} currentUser={user} />
       </>}
     </main>
   </div>;

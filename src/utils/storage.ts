@@ -106,6 +106,15 @@ export const INITIAL_TASKS: Task[] = [
       { id: 'sub-8', title: 'Szybkie przyciski przenoszenia na mobile', completed: true },
       { id: 'sub-9', title: 'Wskaźnik upuszczenia karty', completed: false },
     ],
+    statusComments: [
+      {
+        id: 'comm-1',
+        text: 'Animacje przeciągania na desktopie działają płynnie. Trwają testy gestów dotykowych na urządzeniach mobilnych.',
+        timestamp: new Date(Date.now() - 12 * 3600000).toISOString(),
+        author: 'Darek Maj',
+      },
+    ],
+    closingStatus: '',
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     updatedAt: new Date().toISOString(),
     githubIssueNumber: 103,
@@ -159,6 +168,21 @@ export const INITIAL_TASKS: Task[] = [
       { id: 'sub-16', title: 'Dobór fontów Plus Jakarta Sans i JetBrains Mono', completed: true },
       { id: 'sub-17', title: 'Kontrast kart i etykiet terminów', completed: true },
     ],
+    statusComments: [
+      {
+        id: 'comm-2',
+        text: 'Wszystkie komponenty zostały przystosowane do palety kolorystycznej.',
+        timestamp: new Date(Date.now() - 4 * 86400000).toISOString(),
+        author: 'Anna Kwiatkowska',
+      },
+      {
+        id: 'comm-3',
+        text: 'Przetestowano kontrast WCAG AA i AAA. Wskaźniki są w pełni czytelne.',
+        timestamp: new Date(Date.now() - 3 * 86400000).toISOString(),
+        author: 'Darek Maj',
+      },
+    ],
+    closingStatus: 'Wdrożono i przetestowano paletę Dark Slate w całym systemie. Spełniono wymogi kontrastu WCAG 2.1 AA.',
     createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
     updatedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
     githubIssueNumber: 106,

@@ -1,4 +1,4 @@
-import { CalendarDays, CheckSquare, ChevronDown, GripVertical, UserRound } from 'lucide-react';
+import { CalendarDays, CheckSquare, ChevronDown, GripVertical, MessageSquare, UserRound } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
@@ -29,6 +29,12 @@ function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, disa
     </div>}
     <div className="card-footer">
       <span className={due.isOverdue ? 'card-date overdue' : 'card-date'} title={due.badgeText}><CalendarDays size={13} />{task.dueDate ? due.formatted : 'Bez terminu'}</span>
+      {task.statusComments && task.statusComments.length > 0 && (
+        <span className="card-comment-indicator" title={`${task.statusComments.length} ${task.statusComments.length === 1 ? 'komentarz o statusie' : 'komentarze o statusie'}`}>
+          <MessageSquare size={11} />
+          <span>{task.statusComments.length}</span>
+        </span>
+      )}
       <div className="card-assignee-pill" title={person ? `Osoba: ${person.name} (kliknij, aby zmienić)` : 'Nieprzypisane (kliknij, aby przypisać)'}>
         <span className="avatar small" style={person ? { background: person.color + '18', color: person.color } : undefined}>
           {person ? person.name.split(' ').map(x => x[0]).slice(0, 2).join('') : <UserRound size={11} />}

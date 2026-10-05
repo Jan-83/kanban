@@ -159,6 +159,32 @@ input[type=checkbox] { accent-color: var(--accent); }
 .button.compact { padding: 5px 10px; font-size: 11px; line-height: 15px; }
 .button.secondary { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
 .button.secondary:hover:not(:disabled) { background: #f1f5f9; }
+
+/* Status Comments & Closing Status */
+.field-label-prominent { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #334155; text-transform: uppercase; margin-bottom: 2px; }
+.field-sublabel { display: block; font-weight: 400; font-size: 11px; color: #64748b; text-transform: none; letter-spacing: normal; margin-top: 3px; margin-bottom: 7px; }
+.section-title-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.hint-small { font-size: 10px; }
+.status-comments-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; padding: 13px; display: grid; gap: 10px; }
+.status-comments-history { display: grid; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.status-comment-card { background: #ffffff; border: 1px solid #e2e8f0; border-left: 3px solid var(--accent); border-radius: 7px; padding: 8px 11px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03); }
+.status-comment-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.status-comment-author { font-size: 11px; font-weight: 600; color: #1e293b; }
+.status-comment-time { display: inline-flex; align-items: center; gap: 4px; color: #64748b; font-size: 10px; font-variant-numeric: tabular-nums; }
+.delete-comment-btn { margin-left: auto; color: #94a3b8; padding: 2px 4px; border-radius: 4px; }
+.delete-comment-btn:hover { color: #ef4444; background: #fee2e2; }
+.status-comment-content { font-size: 12px; color: #334155; white-space: pre-wrap; word-break: break-word; line-height: 1.45; }
+.status-comment-empty { font-size: 11px; color: #94a3b8; font-style: italic; margin: 2px 0 4px; }
+.status-comment-composer { display: grid; gap: 7px; padding-top: 6px; border-top: 1px dashed #e2e8f0; }
+.status-comment-composer textarea { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; width: 100%; box-sizing: border-box; font-family: inherit; resize: vertical; }
+.status-comment-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.composer-tip { font-size: 10px; }
+.status-add-btn { font-size: 11px; padding: 6px 12px; }
+.closing-status-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; padding: 13px; display: grid; gap: 6px; }
+.closing-status-box textarea { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 10px; font-size: 12px; width: 100%; box-sizing: border-box; font-family: inherit; resize: vertical; }
+.card-comment-indicator { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 500; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; padding: 2px 6px; }
+.table-title-cell { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.table-closing-text { font-size: 10px; color: #059669; margin-top: 3px; font-weight: 500; }
 .export-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; }
 .export-grid .panel > svg { color: #168877; margin-bottom: 17px; }
 .empty-state { text-align: center; padding: 65px 20px; color: #87959e; font-size: 13px; }

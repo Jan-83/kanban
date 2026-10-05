@@ -61,3 +61,20 @@ test('remove forged and default legacy auth while preserving board data for expl
   assert.doesNotThrow(clearLegacyAuthentication);
 });
 
+test('statusComments and closingStatus are parsed and preserved', () => {
+  const taskWithDetails: Task = {
+    ...task('task-with-status'),
+    statusComments: [
+      { id: 'c1', text: 'Pierwszy komentarz o postępie', timestamp: '2026-10-05T12:00:00.000Z', author: 'Janek' },
+    ],
+    closingStatus: 'Zadanie zostało w pełni ukończone i przetestowane.',
+  };
+  const parsed = parseBoard({ ...emptyBoard(), tasks: [taskWithDetails] });
+  assert.equal(parsed.tasks[0].statusComments?.length, 1);
+  assert.equal(parsed.tasks[0].statusComments?.[0].text, 'Pierwszy komentarz o postępie');
+  assert.equal(parsed.tasks[0].statusComments?.[0].author, 'Janek');
+  assert.equal(parsed.tasks[0].closingStatus, 'Zadanie zostało w pełni ukończone i przetestowane.');
+  assert.match(generateGitHubIssuesMarkdown(parsed.tasks, [], parsed.stages), /Pierwszy komentarz o postępie/);
+  assert.match(generateGitHubIssuesMarkdown(parsed.tasks, [], parsed.stages), /Status zamknięcia/);
+});
+

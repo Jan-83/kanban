@@ -7,7 +7,7 @@ import { evaluateDueDate } from '../utils/dateUtils';
 import { STAGE_COLORS } from '../utils/board';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskOverlay, PRIORITIES } from './TaskCard';
-interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAssign?: (id: string, assigneeId: string | null) => void; onAddStage: (name: string, color: string) => Promise<boolean>; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
+interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAssign?: (id: string, assigneeId: string | null) => void; onToggleSubtask?: (id: string, subtaskId: string) => void; onAddStage: (name: string, color: string) => Promise<boolean>; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
 // Both sortable levels share one context. Keyboard targets must stay in the active level.
 const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
   const column = String(args.active).startsWith('column:');
@@ -16,7 +16,7 @@ const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
   ));
   return sortableKeyboardCoordinates(event, { ...args, context: { ...args.context, droppableRects } });
 };
-export function KanbanBoard({ data, onEdit, onNew, onMove, onAssign, onAddStage, onMoveStage, onStageColor, disabled }: Props) {
+export function KanbanBoard({ data, onEdit, onNew, onMove, onAssign, onToggleSubtask, onAddStage, onMoveStage, onStageColor, disabled }: Props) {
   const [query, setQuery] = useState('');
   const [person, setPerson] = useState('');
   const [priority, setPriority] = useState('');
@@ -74,7 +74,7 @@ export function KanbanBoard({ data, onEdit, onNew, onMove, onAssign, onAddStage,
       return cards.length ? cards : hits.length ? hits : closestCorners(candidates);
     }} onDragStart={({ active }) => setActiveId(String(active.id))} onDragCancel={() => setActiveId(null)} onDragEnd={drop} accessibility={{ screenReaderInstructions: { draggable: 'Spacja rozpoczyna przenoszenie. Strzałki wybierają miejsce. Spacja zatwierdza, Escape anuluje.' } }}>
       <SortableContext items={data.stages.map(s => 'column:' + s.id)} strategy={horizontalListSortingStrategy}>
-        <div className="board-scroll"><div className="kanban-grid" style={{ gridTemplateColumns: 'repeat(' + data.stages.length + ', minmax(250px, 1fr))' }}>{data.stages.map(stage => <KanbanColumn key={stage.id} stage={stage} stages={data.stages} tasks={visible.filter(t => t.status === stage.id)} total={data.tasks.filter(t => t.status === stage.id).length} members={data.members} onNew={onNew} onEdit={onEdit} onMove={onMove} onAssign={onAssign} onMoveStage={onMoveStage} onStageColor={onStageColor} disabled={disabled} />)}</div></div>
+        <div className="board-scroll"><div className="kanban-grid" style={{ gridTemplateColumns: 'repeat(' + data.stages.length + ', minmax(250px, 1fr))' }}>{data.stages.map(stage => <KanbanColumn key={stage.id} stage={stage} stages={data.stages} tasks={visible.filter(t => t.status === stage.id)} total={data.tasks.filter(t => t.status === stage.id).length} members={data.members} onNew={onNew} onEdit={onEdit} onMove={onMove} onAssign={onAssign} onToggleSubtask={onToggleSubtask} onMoveStage={onMoveStage} onStageColor={onStageColor} disabled={disabled} />)}</div></div>
       </SortableContext>
       <DragOverlay>{activeTask ? <TaskOverlay task={activeTask} teamMembers={data.members} stages={data.stages} onEdit={onEdit} onMove={onMove} /> : activeStage ? <section className="kanban-column column-overlay" style={{ '--stage-color': activeStage.color } as React.CSSProperties}>
         <div className="column-heading"><GripVertical size={16} /><span className="stage-dot" /><h2>{activeStage.title}</h2><span className="count">{data.tasks.filter(t => t.status === activeStage.id).length}</span></div>

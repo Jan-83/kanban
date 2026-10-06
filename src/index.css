@@ -100,6 +100,12 @@ h2 { font-size: 14px; font-weight: 700; }
 .card-progress progress::-webkit-progress-bar { background: var(--track); border-radius: 5px; }
 .card-progress progress::-webkit-progress-value { background: var(--progress-color); border-radius: 5px; transition: width .2s; }
 .card-progress progress::-moz-progress-bar { background: var(--progress-color); border-radius: 5px; }
+.card-subtasks-preview { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; background: var(--surface-subtle); border: 1px solid var(--soft-border); border-radius: 6px; padding: 4px 6px; max-height: 140px; overflow-y: auto; }
+.card-subtask-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); cursor: pointer; user-select: none; line-height: 1.3; padding: 2px 0; transition: color 0.15s; }
+.card-subtask-item:hover { color: var(--text); }
+.card-subtask-item input[type="checkbox"] { width: 13px; height: 13px; cursor: pointer; accent-color: var(--accent); margin: 0; flex-shrink: 0; }
+.card-subtask-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-subtask-item.is-completed .card-subtask-text { text-decoration: line-through; color: var(--muted); }
 .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--soft-border); padding-top: 4px; margin-top: 6px; }
 .card-date, .card-checklist { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; color: var(--muted); }
 .card-date.overdue { color: var(--danger); }

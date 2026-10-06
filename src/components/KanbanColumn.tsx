@@ -6,9 +6,9 @@ import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
 import { STAGE_COLORS } from '../utils/board';
 import { TaskCard } from './TaskCard';
-interface Props { stage: BoardStage; stages: BoardStage[]; tasks: Task[]; total: number; members: TeamMember[]; onNew: (id: string) => void; onEdit: (task: Task) => void; onMove: (id: string, stage: string) => void; onAssign?: (id: string, assigneeId: string | null) => void; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
+interface Props { stage: BoardStage; stages: BoardStage[]; tasks: Task[]; total: number; members: TeamMember[]; onNew: (id: string) => void; onEdit: (task: Task) => void; onMove: (id: string, stage: string) => void; onAssign?: (id: string, assigneeId: string | null) => void; onToggleSubtask?: (id: string, subtaskId: string) => void; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
 const colorNames = ['Indygo', 'Bursztynowy', 'Zielony', 'Różowy', 'Niebieski', 'Szary', 'Pomarańczowy', 'Turkusowy'];
-export function KanbanColumn({ stage, stages, tasks, total, members, onNew, onEdit, onMove, onAssign, onMoveStage, onStageColor, disabled }: Props) {
+export function KanbanColumn({ stage, stages, tasks, total, members, onNew, onEdit, onMove, onAssign, onToggleSubtask, onMoveStage, onStageColor, disabled }: Props) {
   const sortable = useSortable({ id: 'column:' + stage.id, disabled });
   const { setNodeRef, isOver } = useDroppable({ id: 'stage:' + stage.id, disabled, data: { hasTasks: tasks.length > 0 } });
   const menu = useRef<HTMLDetailsElement>(null);
@@ -28,7 +28,7 @@ export function KanbanColumn({ stage, stages, tasks, total, members, onNew, onEd
       <button className="icon-button" onClick={() => onNew(stage.id)} disabled={disabled} aria-label={'Dodaj zadanie: ' + stage.title}><Plus size={16} /></button>
     </div>
     <SortableContext items={tasks.map(t => 'task:' + t.id)} strategy={verticalListSortingStrategy}>
-      <div ref={setNodeRef} className="column-cards">{tasks.map(task => <TaskCard key={task.id} task={task} stages={stages} teamMembers={members} onEdit={onEdit} onMove={onMove} onAssign={onAssign} disabled={disabled} />)}
+      <div ref={setNodeRef} className="column-cards">{tasks.map(task => <TaskCard key={task.id} task={task} stages={stages} teamMembers={members} onEdit={onEdit} onMove={onMove} onAssign={onAssign} onToggleSubtask={onToggleSubtask} disabled={disabled} />)}
         {!tasks.length && <p className="column-empty">{total ? 'Brak wyników dla tych filtrów' : 'Przenieś tutaj zadanie'}</p>}
       </div>
     </SortableContext>

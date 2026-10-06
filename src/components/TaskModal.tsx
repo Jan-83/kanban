@@ -122,11 +122,16 @@ export function TaskModal({
     };
     resize();
     let width = field.clientWidth;
+    let frame = 0;
     const observer = new ResizeObserver(() => {
-      if (field.clientWidth !== width) { width = field.clientWidth; resize(); }
+      if (field.clientWidth !== width) {
+        width = field.clientWidth;
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(resize);
+      }
     });
     observer.observe(field);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   }, [isOpen, description, descriptionHtml]);
   useEffect(() => () => { previewUrls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
   useEffect(() => {

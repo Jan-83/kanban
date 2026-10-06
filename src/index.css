@@ -82,6 +82,16 @@ h2 { font-size: 14px; font-weight: 700; }
 .task-card.deadline-today { border-color: var(--warning-border); background: var(--warning-bg); }
 .task-card.dragging { opacity: .23; }
 .drag-overlay { box-shadow: 0 12px 32px #4f46e527; border-color: #6366f1; }
+.task-card.has-task-color { border-color: var(--task-color); border-width: 2px; }
+.task-color-picker { min-width: 0; border: 0; padding: 0; margin: 0; }
+.task-color-picker legend { margin-bottom: 8px; }
+.task-color-options { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.task-color-swatch { width: 26px; height: 26px; border: 1px solid #0002; border-radius: 6px; padding: 0; }
+.task-color-swatch[aria-pressed=true] { outline: 2px solid var(--text); outline-offset: 2px; }
+.task-color-default { font-size: 11px; padding: 5px 9px; }
+.task-color-default[aria-pressed=true] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.task-color-custom { display: inline-flex !important; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.task-color-custom input[type=color] { width: 30px; height: 28px; padding: 2px; cursor: pointer; }
 .card-top { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
 .priority { font-size: 9px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); padding: 2px 5px; border-radius: 4px; background: var(--surface-subtle); white-space: nowrap; }
 .priority > span { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }

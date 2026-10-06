@@ -1,4 +1,5 @@
 import { CalendarDays, CheckSquare, ChevronDown, GripVertical, MessageSquare, UserRound } from 'lucide-react';
+import type { CSSProperties } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
@@ -91,9 +92,9 @@ export function TaskCard(props: Props) {
   const sortable = useSortable({ id: 'task:' + props.task.id, disabled: props.disabled, data: { task: props.task } });
   const due = evaluateDueDate(props.task.dueDate, props.task.status === 'done');
   const deadlineClass = props.task.status === 'done' ? '' : due.isOverdue ? ' deadline-overdue' : due.isToday ? ' deadline-today' : '';
-  return <article ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition }} className={'task-card' + deadlineClass + (sortable.isDragging ? ' dragging' : '')}>
+  return <article ref={sortable.setNodeRef} style={{ transform: CSS.Transform.toString(sortable.transform), transition: sortable.transition, ...(props.task.color ? { '--task-color': props.task.color } : {}) } as CSSProperties} className={'task-card' + deadlineClass + (props.task.color ? ' has-task-color' : '') + (sortable.isDragging ? ' dragging' : '')}>
     <CardContent {...props} handle={<button ref={sortable.setActivatorNodeRef} className="drag-handle" {...sortable.attributes} {...sortable.listeners} aria-label={'Przeciągnij: ' + props.task.title} disabled={props.disabled} title="Przeciągnij lub użyj spacji i strzałek"><GripVertical size={17} /></button>} />
   </article>;
 }
-export function TaskOverlay(props: Props) { return <article className="task-card drag-overlay"><CardContent {...props} overlay handle={<GripVertical size={17} />} /></article>; }
+export function TaskOverlay(props: Props) { return <article className={'task-card drag-overlay' + (props.task.color ? ' has-task-color' : '')} style={props.task.color ? { '--task-color': props.task.color } as CSSProperties : undefined}><CardContent {...props} overlay handle={<GripVertical size={17} />} /></article>; }
 

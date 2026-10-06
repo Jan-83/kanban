@@ -11,13 +11,25 @@ const boardId = '10000000-0000-4000-a000-000000000001';
 const image: TaskImage = { id: 'photo-1', name: 'panel.jpg', path: boardId + '/task-1/photo-1.jpg', size: 100, mimeType: 'image/jpeg', uploadedAt: '2026-10-06T20:00:00Z' };
 const task: Task = { id: 'task-1', title: 'Odbiór', description: 'Sprawdź oświetlenie', descriptionHtml: '<p>Sprawdź <strong>oświetlenie</strong></p>', images: [image], status: 'todo', priority: 'medium', dueDate: '', assigneeId: null, tags: [], subtasks: [], statusComments: [], closingStatus: '', createdAt: '2026-10-06', updatedAt: '2026-10-06' };
 
-test('HTML and private photo metadata survive board saves, assignment and moving', () => {
-  const board = parseBoard({ ...emptyBoard(), tasks: [task] });
+test('HTML, task colors and private photo metadata survive board saves, assignment and moving', () => {
+  const board = parseBoard({ ...emptyBoard(), tasks: [{ ...task, color: '#db2777' }] });
   const result = parseBoard(JSON.parse(JSON.stringify(assignTask(moveTask(board, task.id, 'done'), task.id, null))));
   assert.equal(result.tasks[0].descriptionHtml, task.descriptionHtml);
   assert.deepEqual(result.tasks[0].images, [image]);
   assert.equal(result.tasks[0].status, 'done');
   assert.equal(result.tasks[0].description, task.description);
+  assert.equal(result.tasks[0].color, '#db2777');
+});
+
+test('task border colors can be cleared, leave legacy tasks unchanged and reject unsafe CSS', () => {
+  const board = parseBoard({ ...emptyBoard(), tasks: [{ ...task, color: '#12ABef' }] });
+  assert.equal(board.tasks[0].color, '#12ABef');
+  const cleared = parseBoard({ ...board, tasks: [{ ...board.tasks[0], color: undefined }] });
+  assert.deepEqual(cleared.tasks[0], task);
+  assert.equal('color' in cleared.tasks[0], false);
+  for (const color of ['red', '#abc', '#12345678', 'url(https://example.invalid/)', 'var(--text)', '#123456;display:none', null, 1]) {
+    assert.throws(() => parseBoard({ ...emptyBoard(), tasks: [{ ...task, color }] }));
+  }
 });
 
 test('legacy descriptions retain text without invented image or HTML fields', () => {

@@ -1,5 +1,5 @@
 import { Task, TeamMember, GitHubRepoConfig, BoardStage } from '../types/kanban';
-import { DEFAULT_STAGES, stageTitle } from './board';
+import { DEFAULT_STAGES, stageTitle, taskAssignees } from './board';
 
 export function generateGitHubIssuesMarkdown(tasks: Task[], members: TeamMember[], stages: BoardStage[] = DEFAULT_STAGES): string {
   const lines: string[] = [
@@ -12,8 +12,8 @@ export function generateGitHubIssuesMarkdown(tasks: Task[], members: TeamMember[
   ];
 
   tasks.forEach((task, index) => {
-    const assignee = members.find((m) => m.id === task.assigneeId);
-    const assigneeStr = assignee ? `${assignee.name} (@${assignee.email.split('@')[0]})` : 'Brak przypisania';
+    const assignees = taskAssignees(task, members);
+    const assigneeStr = assignees.map(person => `${person.name} (@${person.email.split('@')[0]})`).join(', ') || 'Brak przypisania';
     const statusMap = {
       todo: 'Do zrobienia (Backlog)',
       in_progress: 'W trakcie (In Progress)',
@@ -30,7 +30,7 @@ export function generateGitHubIssuesMarkdown(tasks: Task[], members: TeamMember[
     lines.push(`- **Status:** ${stageTitle(stages, task.status)}`);
     lines.push(`- **Priorytet:** ${priorityMap[task.priority]}`);
     lines.push(`- **Termin realizacji:** ${task.dueDate || 'Brak'}`);
-    lines.push(`- **Odpowiedzialny:** ${assigneeStr}`);
+    lines.push(`- **Odpowiedzialni:** ${assigneeStr}`);
     if (task.tags.length > 0) {
       lines.push(`- **Etykiety:** ${task.tags.map((t) => `\`${t}\``).join(', ')}`);
     }
@@ -181,8 +181,8 @@ export function exportTasksToCSV(tasks: Task[], members: TeamMember[], stages: B
     'Status',
     'Priorytet',
     'Termin Realizacji (Deadline)',
-    'Przypisana Osoba',
-    'Email Wykonawcy',
+    'Przypisane Osoby',
+    'Emaile Wykonawców',
     'Tagi',
     'Ukończone Podzadania',
     'Wszystkie Podzadania',
@@ -217,7 +217,7 @@ export function exportTasksToCSV(tasks: Task[], members: TeamMember[], stages: B
   rows.push(headers.map(escapeCSV).join(','));
 
   tasks.forEach((task) => {
-    const assignee = members.find((m) => m.id === task.assigneeId);
+    const assignees = taskAssignees(task, members);
     const completedSubs = task.subtasks.filter((s) => s.completed).length;
     const totalSubs = task.subtasks.length;
 
@@ -227,8 +227,8 @@ export function exportTasksToCSV(tasks: Task[], members: TeamMember[], stages: B
       escapeCSV(stageTitle(stages, task.status)),
       escapeCSV(priorityMap[task.priority] || task.priority),
       escapeCSV(task.dueDate || 'Brak terminu'),
-      escapeCSV(assignee ? assignee.name : 'Nieprzypisana'),
-      escapeCSV(assignee ? assignee.email : ''),
+      escapeCSV(assignees.map(person => person.name).join('; ') || 'Nieprzypisane'),
+      escapeCSV(assignees.map(person => person.email).join('; ')),
       escapeCSV(task.tags.join(', ')),
       escapeCSV(completedSubs),
       escapeCSV(totalSubs),

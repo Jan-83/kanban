@@ -49,6 +49,11 @@ The header's sun/moon buttons select a white or dark gray appearance. This is a 
 
 CSV, Markdown and full JSON exports include custom stages. Export is explicit and local; there is no simulated GitHub sync.
 
+## Responsible people and description height
+The task form supports several **Osoby odpowiedzialne**. Existing single-person assignments keep their values; edited tasks store `assigneeIds` plus the first selected person's ID in the legacy `assigneeId` field. Cards and the list offer a checkbox picker; **Zastosuj osoby** saves the selection. Person filters, the team counts, deadlines and CSV/Markdown/JSON exports include all selected people. Removing someone from the team leaves other responsible people assigned.
+
+Plain descriptions expand automatically to fit the content, up to five times the original three-line field height, then scroll internally. Formatted descriptions expand to a maximum of 625 px (five times their former 125 px limit). The larger HTML editor remains available.
+
 ## Task colors
 In the task form, **Kolor zadania** selects an optional border color from eight swatches or a custom color picker. **Domyślny** removes it. Save the task to share the choice with the board; it survives reloads, task moves, assignment and full JSON export/import. The chosen border also appears while dragging. Deadline backgrounds and date warnings remain visible independently of the custom border.
 

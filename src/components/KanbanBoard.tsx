@@ -4,10 +4,10 @@ import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordin
 import { GripVertical, ListFilter, Plus, Search, X } from 'lucide-react';
 import type { BoardData, Task } from '../types/kanban';
 import { evaluateDueDate } from '../utils/dateUtils';
-import { STAGE_COLORS } from '../utils/board';
+import { STAGE_COLORS, taskAssigneeIds } from '../utils/board';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskOverlay, PRIORITIES } from './TaskCard';
-interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAssign?: (id: string, assigneeId: string | null) => void; onToggleSubtask?: (id: string, subtaskId: string) => void; onAddStage: (name: string, color: string) => Promise<boolean>; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
+interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAssign?: (id: string, assigneeIds: string[]) => void; onToggleSubtask?: (id: string, subtaskId: string) => void; onAddStage: (name: string, color: string) => Promise<boolean>; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
 // Both sortable levels share one context. Keyboard targets must stay in the active level.
 const keyboardCoordinates: KeyboardCoordinateGetter = (event, args) => {
   const column = String(args.active).startsWith('column:');
@@ -29,7 +29,7 @@ export function KanbanBoard({ data, onEdit, onNew, onMove, onAssign, onToggleSub
   const visible = useMemo(() => data.tasks.filter(t => {
     const due = evaluateDueDate(t.dueDate, t.status === 'done');
     return (!query || (t.title + ' ' + t.description + ' ' + t.tags.join(' ')).toLocaleLowerCase('pl').includes(query.toLocaleLowerCase('pl')))
-      && (!person || (person === 'unassigned' ? !t.assigneeId : t.assigneeId === person))
+      && (!person || (person === 'unassigned' ? !taskAssigneeIds(t).length : taskAssigneeIds(t).includes(person)))
       && (!priority || priority === t.priority)
       && (!deadline || (t.status !== 'done' && (deadline === 'overdue' ? due.isOverdue : due.isToday)));
   }), [data.tasks, query, person, priority, deadline]);

@@ -1,6 +1,7 @@
 import { Task, AppNotification, TeamMember } from '../types/kanban';
 import { evaluateDueDate } from './dateUtils';
 import { playNotificationSound } from './sound';
+import { taskAssignees } from './board';
 
 export function scanTasksForDueNotifications(
   tasks: Task[],
@@ -16,8 +17,7 @@ export function scanTasksForDueNotifications(
     if (task.status === 'done' || !task.dueDate) return;
 
     const status = evaluateDueDate(task.dueDate, false);
-    const assignee = teamMembers.find((m) => m.id === task.assigneeId);
-    const assigneeName = assignee ? assignee.name : 'Nieprzypisana';
+    const assigneeName = taskAssignees(task, teamMembers).map(person => person.name).join(', ') || 'Nieprzypisane';
 
     if (status.isOverdue) {
       const key = `${task.id}-overdue`;
@@ -43,7 +43,7 @@ export function scanTasksForDueNotifications(
           taskTitle: task.title,
           type: 'due_today',
           title: 'Termin upływa dzisiaj!',
-          message: `Zadanie "${task.title}" ma wyznaczony termin na dzisiaj (${status.formatted}). Osoba odpowiedzialna: ${assigneeName}.`,
+          message: `Zadanie "${task.title}" ma wyznaczony termin na dzisiaj (${status.formatted}). Osoby odpowiedzialne: ${assigneeName}.`,
           timestamp: new Date().toISOString(),
           read: false,
         });

@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
 import { STAGE_COLORS } from '../utils/board';
 import { TaskCard } from './TaskCard';
-interface Props { stage: BoardStage; stages: BoardStage[]; tasks: Task[]; total: number; members: TeamMember[]; onNew: (id: string) => void; onEdit: (task: Task) => void; onMove: (id: string, stage: string) => void; onAssign?: (id: string, assigneeId: string | null) => void; onToggleSubtask?: (id: string, subtaskId: string) => void; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
+interface Props { stage: BoardStage; stages: BoardStage[]; tasks: Task[]; total: number; members: TeamMember[]; onNew: (id: string) => void; onEdit: (task: Task) => void; onMove: (id: string, stage: string) => void; onAssign?: (id: string, assigneeIds: string[]) => void; onToggleSubtask?: (id: string, subtaskId: string) => void; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; disabled: boolean; }
 const colorNames = ['Indygo', 'Bursztynowy', 'Zielony', 'Różowy', 'Niebieski', 'Szary', 'Pomarańczowy', 'Turkusowy'];
 export function KanbanColumn({ stage, stages, tasks, total, members, onNew, onEdit, onMove, onAssign, onToggleSubtask, onMoveStage, onStageColor, disabled }: Props) {
   const sortable = useSortable({ id: 'column:' + stage.id, disabled });

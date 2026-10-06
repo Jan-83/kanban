@@ -1,7 +1,7 @@
 .description-field { display: grid; gap: 6px; }
-.description-field > textarea { width: 100%; resize: vertical; }
+.description-field > textarea { width: 100%; min-height: calc(3lh + 20px); max-height: calc((3lh + 20px) * 5); resize: vertical; overflow-y: auto; }
 .description-expand { font-size: 10px; padding: 3px 8px; }
-.description-summary { max-height: 125px; overflow-y: auto; padding: 9px 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-subtle); }
+.description-summary { max-height: 625px; overflow-y: auto; padding: 9px 11px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-subtle); }
 .description-dialog { width: min(1100px, calc(100vw - 32px)); height: min(820px, calc(100dvh - 40px)); max-width: none; max-height: none; border: 1px solid var(--border); border-radius: 15px; padding: 0; background: var(--surface); color: var(--text); box-shadow: 0 25px 100px #0005; }
 .description-dialog[open] { display: flex; flex-direction: column; margin: auto; }
 .description-dialog::backdrop { background: #10172499; backdrop-filter: blur(3px); }

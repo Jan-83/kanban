@@ -1,4 +1,4 @@
-import type { BoardData, BoardStage, StatusComment, Subtask, Task, TaskImage } from '../types/kanban';
+import type { BoardData, BoardStage, StatusComment, Subtask, Task, TaskImage, TeamMember } from '../types/kanban';
 import { MAX_TASK_IMAGES, validTaskImage } from './taskImageValidation';
 
 export const DEFAULT_STAGES: BoardStage[] = [
@@ -59,13 +59,35 @@ export function moveTask(data: BoardData, taskId: string, stageId: string, befor
   return { ...data, tasks };
 }
 
-export function assignTask(data: BoardData, taskId: string, assigneeId: string | null): BoardData {
+export function taskAssigneeIds(task: Pick<Task, 'assigneeId' | 'assigneeIds'>): string[] {
+  return task.assigneeIds ?? (task.assigneeId ? [task.assigneeId] : []);
+}
+
+export function taskAssignees(task: Pick<Task, 'assigneeId' | 'assigneeIds'>, members: TeamMember[]): TeamMember[] {
+  return taskAssigneeIds(task).flatMap(id => {
+    const member = members.find(m => m.id === id);
+    return member ? [member] : [];
+  });
+}
+
+export function assignTask(data: BoardData, taskId: string, selection: string[] | string | null): BoardData {
   const task = data.tasks.find(t => t.id === taskId);
   if (!task) return data;
-  const validAssignee = assigneeId && data.members.some(m => m.id === assigneeId) ? assigneeId : null;
-  if (task.assigneeId === validAssignee) return data;
+  const requested = Array.isArray(selection) ? selection : selection ? [selection] : [];
+  const assigneeIds = [...new Set(requested)].filter(id => data.members.some(m => m.id === id));
+  if (JSON.stringify(taskAssigneeIds(task)) === JSON.stringify(assigneeIds)) return data;
   const now = new Date().toISOString();
-  return { ...data, tasks: data.tasks.map(t => t.id === taskId ? { ...t, assigneeId: validAssignee, updatedAt: now } : t) };
+  return { ...data, tasks: data.tasks.map(t => t.id === taskId ? { ...t, assigneeId: assigneeIds[0] ?? null, assigneeIds, updatedAt: now } : t) };
+}
+
+export function removeMember(data: BoardData, memberId: string): BoardData {
+  const now = new Date().toISOString();
+  return { ...data, members: data.members.filter(m => m.id !== memberId), tasks: data.tasks.map(task => {
+    const assigned = taskAssigneeIds(task);
+    if (!assigned.includes(memberId)) return task;
+    const assigneeIds = assigned.filter(id => id !== memberId);
+    return { ...task, assigneeId: assigneeIds[0] ?? null, ...(task.assigneeIds ? { assigneeIds } : {}), updatedAt: now };
+  }) };
 }
 
 const isObject = (v: unknown): v is Record<string, any> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -84,6 +106,9 @@ export function parseBoard(value: unknown): BoardData {
   if (!tasks.every(t => isObject(t) && id(t.id) && text(t.title, 300) && t.title.trim() && text(t.description) && stages.some(s => s.id === t.status)
     && ['low', 'medium', 'high', 'urgent'].includes(t.priority) && text(t.dueDate, 40) && (!t.dueDate || Number.isFinite(Date.parse(t.dueDate)))
     && (t.assigneeId === null || members.some(m => m.id === t.assigneeId)) && text(t.createdAt, 40) && text(t.updatedAt, 40)
+    && (t.assigneeIds === undefined || (Array.isArray(t.assigneeIds) && t.assigneeIds.length <= members.length
+      && new Set(t.assigneeIds).size === t.assigneeIds.length && t.assigneeIds.every((id: unknown) => members.some(m => m.id === id))
+      && t.assigneeId === (t.assigneeIds[0] ?? null)))
     && Array.isArray(t.tags) && t.tags.length <= 30 && t.tags.every(tag => text(tag, 100))
     && Array.isArray(t.subtasks) && t.subtasks.length <= 100 && unique(t.subtasks) && t.subtasks.every(s => isObject(s) && id(s.id) && text(s.title, 300) && typeof s.completed === 'boolean')
     && (t.statusComments === undefined || (Array.isArray(t.statusComments) && t.statusComments.length <= 500
@@ -102,6 +127,7 @@ export function parseBoard(value: unknown): BoardData {
       ...(t.color ? { color: t.color } : {}),
       ...(t.images?.length ? { images: t.images.map((image: TaskImage) => ({ id: image.id, name: image.name, path: image.path, size: image.size, mimeType: image.mimeType, uploadedAt: image.uploadedAt })) } : {}),
       assigneeId: t.assigneeId, tags: t.tags, subtasks: t.subtasks.map((s: Subtask) => ({ id: s.id, title: s.title, completed: s.completed })),
+      ...(t.assigneeIds !== undefined ? { assigneeIds: [...t.assigneeIds] } : {}),
       statusComments: Array.isArray(t.statusComments)
         ? t.statusComments.map((c: StatusComment) => ({
             id: c.id,
@@ -120,6 +146,10 @@ export function parseLegacyBoard(tasks: unknown, members: unknown): { data: Boar
   const known = new Set(members.filter(isObject).map(m => m.id));
   let unassigned = 0;
   const migrated = tasks.map(t => {
+    if (isObject(t) && Array.isArray(t.assigneeIds) && t.assigneeIds.every(id) && t.assigneeId === (t.assigneeIds[0] ?? null)) {
+      const assigneeIds = t.assigneeIds.filter(person => known.has(person));
+      if (assigneeIds.length !== t.assigneeIds.length) { unassigned++; return { ...t, assigneeId: assigneeIds[0] ?? null, assigneeIds }; }
+    }
     if (isObject(t) && t.assigneeId && !known.has(t.assigneeId)) { unassigned++; return { ...t, assigneeId: null }; }
     return t;
   });

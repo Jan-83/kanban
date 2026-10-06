@@ -54,14 +54,19 @@ test('Postgres authorization boundary and concurrent writes', async t => {
         await denied(save(board, 0), '40001');
       });
     });
-    await t.test('member saves task colors, comment history and closing status through the existing revision RPC', async () => {
+    await t.test('member saves multiple assignees, long descriptions, task colors and status notes through the revision RPC', async () => {
       await as('authenticated', alice, async () => {
-        const data = { ...emptyBoard(), tasks: [{ id: 'status-task', title: 'Odbiór', description: '', status: 'done', priority: 'medium', dueDate: '', assigneeId: null, tags: [], subtasks: [],
+        const data = { ...emptyBoard(), members: [
+          { id: 'person-alice', name: 'Alice', email: 'alice@example.invalid', role: 'Projekt', color: '#6366f1', status: 'active' },
+          { id: 'person-bob', name: 'Bob', email: 'bob@example.invalid', role: 'Realizacja', color: '#10b981', status: 'active' },
+        ], tasks: [{ id: 'status-task', title: 'Odbiór', description: 'Szczegóły odbioru.\n'.repeat(100), status: 'done', priority: 'medium', dueDate: '', assigneeId: 'person-alice', assigneeIds: ['person-alice', 'person-bob'], tags: [], subtasks: [],
           statusComments: [{ id: 'comment-1', text: 'Testy zakończone.', timestamp: '2026-10-05T13:15:00.000Z', author: 'Alice' }],
           color: '#0284c7', closingStatus: 'Wdrożono i uzyskano akceptację.', createdAt: '2026-10-05', updatedAt: '2026-10-05' }] };
         assert.equal(Number((await save(board, 0, data)).rows[0].revision), 1);
         assert.deepEqual((await db.query<any>('select data from public.kanban_boards')).rows[0].data, data);
         const changed = structuredClone(data);
+        changed.tasks[0].assigneeId = 'person-bob';
+        changed.tasks[0].assigneeIds = ['person-bob'];
         changed.tasks[0].color = '#db2777';
         changed.tasks[0].statusComments.push({ id: 'comment-2', text: 'Potwierdzono odbiór.', timestamp: '2026-10-05T14:00:00.000Z', author: 'Alice' });
         assert.equal(Number((await save(board, 1, changed)).rows[0].revision), 2);

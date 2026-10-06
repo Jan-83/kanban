@@ -91,6 +91,7 @@ export function parseBoard(value: unknown): BoardData {
         && Number.isFinite(Date.parse(c.timestamp)) && (c.author === undefined || text(c.author, 120))) && unique(t.statusComments)))
     && (t.closingStatus === undefined || text(t.closingStatus, 10000))
     && (t.descriptionHtml === undefined || text(t.descriptionHtml, 50000))
+    && (t.color === undefined || color(t.color))
     && (t.images === undefined || (Array.isArray(t.images) && t.images.length <= MAX_TASK_IMAGES && unique(t.images) && t.images.every((image: unknown) => validTaskImage(image, t.id))))) || !unique(tasks)) throw new Error('Nieprawidłowe dane zadań.');
   // Unknown properties, old auth metadata and arbitrary avatar URLs are dropped.
   return {
@@ -98,6 +99,7 @@ export function parseBoard(value: unknown): BoardData {
     members: members.map(m => ({ id: m.id, name: m.name, email: m.email, role: m.role, color: m.color, status: m.status })),
     tasks: tasks.map(t => ({ id: t.id, title: t.title.trim(), description: t.description, status: t.status, priority: t.priority, dueDate: t.dueDate,
       ...(t.descriptionHtml ? { descriptionHtml: t.descriptionHtml } : {}),
+      ...(t.color ? { color: t.color } : {}),
       ...(t.images?.length ? { images: t.images.map((image: TaskImage) => ({ id: image.id, name: image.name, path: image.path, size: image.size, mimeType: image.mimeType, uploadedAt: image.uploadedAt })) } : {}),
       assigneeId: t.assigneeId, tags: t.tags, subtasks: t.subtasks.map((s: Subtask) => ({ id: s.id, title: s.title, completed: s.completed })),
       statusComments: Array.isArray(t.statusComments)

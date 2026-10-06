@@ -49,6 +49,9 @@ The header's sun/moon buttons select a white or dark gray appearance. This is a 
 
 CSV, Markdown and full JSON exports include custom stages. Export is explicit and local; there is no simulated GitHub sync.
 
+## Task colors
+In the task form, **Kolor zadania** selects an optional border color from eight swatches or a custom color picker. **Domyślny** removes it. Save the task to share the choice with the board; it survives reloads, task moves, assignment and full JSON export/import. The chosen border also appears while dragging. Deadline backgrounds and date warnings remain visible independently of the custom border.
+
 ## Task status notes
 Below the checklist, **KOMENTARZ O STATUSIE** keeps separate entries with author and timestamp (displayed in Europe/Warsaw). Add entries with the button or Ctrl+Enter, then save the task; saving also includes any comment still in the composer. **STATUS ZAMKNIĘCIA** stores the work that justified completion. These fields use the existing shared board and revision checks, and survive task moves, assignments and JSON export/import. Older tasks start with empty fields. Both sections support the white and dark gray appearance.
 

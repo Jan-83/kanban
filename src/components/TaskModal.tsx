@@ -9,6 +9,10 @@ import { TaskImageGallery, type LocalImagePreview } from './TaskImageGallery';
 import { useTaskImages } from './TaskImageContext';
 
 const DescriptionEditor = lazy(() => import('./DescriptionEditor').then(module => ({ default: module.DescriptionEditor })));
+const TASK_COLORS = [
+  ['#6366f1', 'Fioletowy'], ['#0284c7', 'Niebieski'], ['#0d9488', 'Turkusowy'], ['#10b981', 'Zielony'],
+  ['#f59e0b', 'Bursztynowy'], ['#d97706', 'Pomarańczowy'], ['#db2777', 'Różowy'], ['#64748b', 'Szary'],
+] as const;
 
 export type TaskDraft = Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; newTaskId?: string };
 
@@ -65,6 +69,7 @@ export function TaskModal({
   const busy = boardBusy || uploading || selectingImages;
   const [status, setStatus] = useState(defaultStatus);
   const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [taskColor, setTaskColor] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [tags, setTags] = useState('');
@@ -92,6 +97,7 @@ export function TaskModal({
     setUploadProgress('');
     setStatus(initialTask?.status ?? defaultStatus);
     setPriority(initialTask?.priority ?? 'medium');
+    setTaskColor(initialTask?.color ?? '');
     setDueDate(formatDateTimeForInput(initialTask?.dueDate ?? ''));
     setAssigneeId(initialTask?.assigneeId ?? '');
     setTags(initialTask?.tags.join(', ') ?? '');
@@ -190,6 +196,7 @@ export function TaskModal({
       images: finalImages,
       status,
       priority,
+      color: taskColor || undefined,
       dueDate,
       assigneeId: assigneeId || null,
       tags: [...new Set(tags.split(',').map(t => t.trim()).filter(Boolean))],
@@ -282,6 +289,14 @@ export function TaskModal({
               </select>
             </label>
           </div>
+          <fieldset className="task-color-picker">
+            <legend className="field-label">Kolor zadania <span className="muted hint-small">Obramowanie kafelka na tablicy</span></legend>
+            <div className="task-color-options">
+              <button type="button" className="button task-color-default" aria-pressed={!taskColor} onClick={() => setTaskColor('')}>Domyślny</button>
+              {TASK_COLORS.map(([color, name]) => <button type="button" key={color} className="task-color-swatch" style={{ backgroundColor: color }} aria-label={'Kolor zadania: ' + name} title={name} aria-pressed={taskColor.toLowerCase() === color} onClick={() => setTaskColor(color)} />)}
+              <label className="task-color-custom">Własny<input type="color" aria-label="Własny kolor obramowania zadania" value={taskColor || '#6366f1'} onChange={event => setTaskColor(event.target.value)} /></label>
+            </div>
+          </fieldset>
           <label>
             Tagi <span className="muted">(oddziel przecinkami)</span>
             <input

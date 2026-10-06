@@ -35,6 +35,7 @@ export interface Task {
   description: string;
   descriptionHtml?: string;
   images?: TaskImage[];
+  color?: string;
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: string; // ISO string YYYY-MM-DD or YYYY-MM-DDTHH:mm

@@ -22,15 +22,10 @@ interface Props {
 
 function formatCommentDate(iso: string): string {
   if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const day = pad(d.getDate());
-  const month = pad(d.getMonth() + 1);
-  const year = d.getFullYear();
-  const hours = pad(d.getHours());
-  const minutes = pad(d.getMinutes());
-  return `${day}.${month}.${year}, ${hours}:${minutes}`;
+  return new Intl.DateTimeFormat('pl-PL', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    timeZone: 'Europe/Warsaw',
+  }).format(new Date(iso));
 }
 
 export function TaskModal({
@@ -258,7 +253,7 @@ export function TaskModal({
           <div className="status-comments-box">
             <div className="section-title-row">
               <label className="field-label-prominent" htmlFor="new-status-comment">KOMENTARZ O STATUSIE</label>
-              <span className="muted hint-small">Wpisy z datą i godziną o statusie prac</span>
+              <span className="muted hint-small">Data i godzina: Polska</span>
             </div>
 
             {statusComments.length > 0 ? (
@@ -297,6 +292,7 @@ export function TaskModal({
                 placeholder="Wpisz komentarz o aktualnym statusie prac nad zadaniem…"
                 rows={2}
                 maxLength={2000}
+                disabled={statusComments.length >= 500}
                 onKeyDown={e => {
                   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
@@ -305,7 +301,7 @@ export function TaskModal({
                 }}
               />
               <div className="status-comment-bottom">
-                <span className="muted composer-tip">Wskazówka: Ctrl+Enter lub kliknij Dodaj</span>
+                <span className="muted composer-tip">{statusComments.length >= 500 ? 'Osiągnięto limit 500 komentarzy.' : 'Ctrl+Enter dodaje wpis do historii.'}</span>
                 <button
                   type="button"
                   className="button secondary status-add-btn"
@@ -319,10 +315,12 @@ export function TaskModal({
             </div>
           </div>
 
-          {/* STATUS ZAMKNIECIA (osobne pole) */}
+          <p className="muted hint-small" role="status">Komentarze i status zamknięcia zapiszesz razem z zadaniem przyciskiem „{initialTask ? 'Zapisz zmiany' : 'Utwórz zadanie'}”.</p>
+
+          {/* STATUS ZAMKNIĘCIA (osobne pole) */}
           <div className="closing-status-box">
             <label htmlFor="closing-status-input" className="field-label-prominent">
-              STATUS ZAMKNIECIA
+              STATUS ZAMKNIĘCIA
               <span className="field-sublabel">Opis, co zostało zrobione, żeby uznać zadanie za wykonane</span>
             </label>
             <textarea

@@ -18,7 +18,7 @@ export function assertDraftCurrent(data: BoardData, original: Task | null, id?: 
   }
 }
 
-// Stable IDs preserve historical tasks. "done" remains the terminal stage.
+// Stable IDs preserve historical tasks. "done" means completed in any position.
 export function addStage(data: BoardData, title: string, color: string, id: string): BoardData {
   const name = title.trim();
   if (!name || name.length > 48 || data.stages.length >= 20 || data.stages.some(s => s.title.toLocaleLowerCase('pl') === name.toLocaleLowerCase('pl')) || data.stages.some(s => s.id === id)) {
@@ -28,6 +28,22 @@ export function addStage(data: BoardData, title: string, color: string, id: stri
   const stages = [...data.stages];
   stages.splice(Math.max(0, stages.findIndex(s => s.id === 'done')), 0, stage);
   return { ...data, stages };
+}
+
+export function moveStage(data: BoardData, stageId: string, targetId: string): BoardData {
+  const from = data.stages.findIndex(s => s.id === stageId);
+  const to = data.stages.findIndex(s => s.id === targetId);
+  if (from < 0 || to < 0 || from === to) return data;
+  const stages = [...data.stages];
+  const [stage] = stages.splice(from, 1);
+  stages.splice(to, 0, stage);
+  return { ...data, stages };
+}
+
+export function setStageColor(data: BoardData, stageId: string, color: string): BoardData {
+  if (!/^#[\da-f]{6}$/i.test(color)) throw new Error('Wybierz prawidłowy kolor etapu.');
+  if (!data.stages.some(s => s.id === stageId)) return data;
+  return { ...data, stages: data.stages.map(s => s.id === stageId ? { ...s, color } : s) };
 }
 
 // Insertion before a visible card preserves the order of filtered-out cards.
@@ -69,7 +85,9 @@ export function parseBoard(value: unknown): BoardData {
     && (t.assigneeId === null || members.some(m => m.id === t.assigneeId)) && text(t.createdAt, 40) && text(t.updatedAt, 40)
     && Array.isArray(t.tags) && t.tags.length <= 30 && t.tags.every(tag => text(tag, 100))
     && Array.isArray(t.subtasks) && t.subtasks.length <= 100 && unique(t.subtasks) && t.subtasks.every(s => isObject(s) && id(s.id) && text(s.title, 300) && typeof s.completed === 'boolean')
-    && (t.statusComments === undefined || (Array.isArray(t.statusComments) && t.statusComments.length <= 500 && unique(t.statusComments) && t.statusComments.every(c => isObject(c) && id(c.id) && text(c.text, 5000) && text(c.timestamp, 50) && (c.author === undefined || text(c.author, 120)))))
+    && (t.statusComments === undefined || (Array.isArray(t.statusComments) && t.statusComments.length <= 500
+      && t.statusComments.every(c => isObject(c) && id(c.id) && text(c.text, 5000) && text(c.timestamp, 50)
+        && Number.isFinite(Date.parse(c.timestamp)) && (c.author === undefined || text(c.author, 120))) && unique(t.statusComments)))
     && (t.closingStatus === undefined || text(t.closingStatus, 10000))) || !unique(tasks)) throw new Error('Nieprawidłowe dane zadań.');
   // Unknown properties, old auth metadata and arbitrary avatar URLs are dropped.
   return {

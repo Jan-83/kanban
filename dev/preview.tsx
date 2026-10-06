@@ -1,9 +1,10 @@
 // Separate development entry. Vite's production build includes index.html only.
 import { createRoot } from 'react-dom/client';
 import { Workspace, type BoardRepository } from '../src/components/Workspace';
-import { emptyBoard } from '../src/utils/board';
+import { emptyBoard, parseBoard } from '../src/utils/board';
 import { RevisionConflictError } from '../src/utils/supabase';
-import type { BoardData } from '../src/types/kanban';
+import type { BoardData, TaskImage } from '../src/types/kanban';
+import type { TaskImageRepository } from '../src/utils/taskImages';
 import '../src/index.css';
 import { applyTheme, readTheme } from '../src/utils/theme';
 applyTheme(readTheme());
@@ -15,9 +16,21 @@ const data: BoardData = {
   })),
 };
 let snapshot = { data, revision: 0 };
+try { const saved = JSON.parse(sessionStorage.getItem('kanban-media-preview-board') ?? 'null'); if (saved) snapshot = { data: parseBoard(saved.data), revision: saved.revision }; } catch {}
 const repository: BoardRepository = {
   load: async () => structuredClone(snapshot),
-  save: async (data, revision) => { if (revision !== snapshot.revision) throw new RevisionConflictError('Odśwież tablicę.'); snapshot = { data: structuredClone(data), revision: revision + 1 }; return structuredClone(snapshot); },
+  save: async (data, revision) => { if (revision !== snapshot.revision) throw new RevisionConflictError('Odśwież tablicę.'); snapshot = { data: structuredClone(data), revision: revision + 1 }; sessionStorage.setItem('kanban-media-preview-board', JSON.stringify(snapshot)); return structuredClone(snapshot); },
 };
-createRoot(document.getElementById('root')!).render(<Workspace user={{ id: 'demo', name: 'Jan', email: 'demo@example.invalid', role: 'admin' }} repository={repository} onLogout={() => location.assign('/')} onAccessLost={() => location.assign('/')} />);
+const imageRepository: TaskImageRepository = {
+  async upload(taskId, file) {
+    const id = crypto.randomUUID();
+    const mimeType = file.type as TaskImage['mimeType'];
+    const path = '10000000-0000-4000-a000-000000000001/' + taskId + '/' + id + '.' + ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[mimeType]);
+    const dataUrl = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); });
+    sessionStorage.setItem('kanban-media-preview-photo-' + path, dataUrl);
+    return { id, name: file.name, path, mimeType, size: file.size, uploadedAt: new Date().toISOString() };
+  },
+  async urls(images) { return Object.fromEntries(images.map(image => [image.id, sessionStorage.getItem('kanban-media-preview-photo-' + image.path) ?? ''])); },
+};
+createRoot(document.getElementById('root')!).render(<Workspace user={{ id: 'demo', name: 'Jan', email: 'demo@example.invalid', role: 'admin' }} repository={repository} imageRepository={imageRepository} onLogout={() => location.assign('/')} onAccessLost={() => location.assign('/')} />);
 

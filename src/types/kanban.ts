@@ -20,10 +20,21 @@ export interface StatusComment {
   author?: string;
 }
 
+export interface TaskImage {
+  id: string;
+  name: string;
+  path: string;
+  size: number;
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
+  uploadedAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
   description: string;
+  descriptionHtml?: string;
+  images?: TaskImage[];
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: string; // ISO string YYYY-MM-DD or YYYY-MM-DDTHH:mm

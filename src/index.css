@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./taskMedia.css";
 :root { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-synthesis: none; color-scheme: light;
   --text: #202931; --bg: #fff; --surface: #fff; --column: #f3f5f8; --surface-subtle: #f7f8fa;
   --muted: #66727f; --border: #dfe4ea; --soft-border: #edf0f3; --hover: #edf0f5; --hover-border: #b8c3d0;

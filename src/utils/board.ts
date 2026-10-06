@@ -1,4 +1,5 @@
-import type { BoardData, BoardStage, StatusComment, Subtask, Task } from '../types/kanban';
+import type { BoardData, BoardStage, StatusComment, Subtask, Task, TaskImage } from '../types/kanban';
+import { MAX_TASK_IMAGES, validTaskImage } from './taskImageValidation';
 
 export const DEFAULT_STAGES: BoardStage[] = [
   { id: 'todo', title: 'Do zrobienia', color: '#6366f1' },
@@ -88,12 +89,16 @@ export function parseBoard(value: unknown): BoardData {
     && (t.statusComments === undefined || (Array.isArray(t.statusComments) && t.statusComments.length <= 500
       && t.statusComments.every(c => isObject(c) && id(c.id) && text(c.text, 5000) && text(c.timestamp, 50)
         && Number.isFinite(Date.parse(c.timestamp)) && (c.author === undefined || text(c.author, 120))) && unique(t.statusComments)))
-    && (t.closingStatus === undefined || text(t.closingStatus, 10000))) || !unique(tasks)) throw new Error('Nieprawidłowe dane zadań.');
+    && (t.closingStatus === undefined || text(t.closingStatus, 10000))
+    && (t.descriptionHtml === undefined || text(t.descriptionHtml, 50000))
+    && (t.images === undefined || (Array.isArray(t.images) && t.images.length <= MAX_TASK_IMAGES && unique(t.images) && t.images.every((image: unknown) => validTaskImage(image, t.id))))) || !unique(tasks)) throw new Error('Nieprawidłowe dane zadań.');
   // Unknown properties, old auth metadata and arbitrary avatar URLs are dropped.
   return {
     stages: stages.map(s => ({ id: s.id, title: s.title.trim(), color: s.color })),
     members: members.map(m => ({ id: m.id, name: m.name, email: m.email, role: m.role, color: m.color, status: m.status })),
     tasks: tasks.map(t => ({ id: t.id, title: t.title.trim(), description: t.description, status: t.status, priority: t.priority, dueDate: t.dueDate,
+      ...(t.descriptionHtml ? { descriptionHtml: t.descriptionHtml } : {}),
+      ...(t.images?.length ? { images: t.images.map((image: TaskImage) => ({ id: image.id, name: image.name, path: image.path, size: image.size, mimeType: image.mimeType, uploadedAt: image.uploadedAt })) } : {}),
       assigneeId: t.assigneeId, tags: t.tags, subtasks: t.subtasks.map((s: Subtask) => ({ id: s.id, title: s.title, completed: s.completed })),
       statusComments: Array.isArray(t.statusComments)
         ? t.statusComments.map((c: StatusComment) => ({

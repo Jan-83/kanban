@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
 import { evaluateDueDate } from '../utils/dateUtils';
+import { TaskImageGallery } from './TaskImageGallery';
 export const PRIORITIES = { urgent: 'Pilny', high: 'Wysoki', medium: 'Średni', low: 'Niski' };
 interface Props {
   task: Task;
@@ -78,6 +79,7 @@ function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, onTo
         ))}
       </div>
     )}
+    <TaskImageGallery images={task.images} compact disabled={disabled || overlay} />
     <div className="card-footer">
       <span className={due.isOverdue ? 'card-date overdue' : 'card-date'} title={due.badgeText}><CalendarDays size={12} />{task.dueDate ? due.formatted : 'Bez terminu'}</span>
       {!!task.statusComments?.length && <span className="card-comment-indicator" title={'Komentarze o statusie: ' + task.statusComments.length}><MessageSquare size={11} /><span>{task.statusComments.length}</span></span>}

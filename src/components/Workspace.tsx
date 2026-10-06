@@ -11,11 +11,13 @@ import { TimelineCalendarView } from './TimelineCalendarView';
 import { TeamView } from './TeamView';
 import { GitHubModal } from './GitHubModal';
 import { TaskModal, type TaskDraft } from './TaskModal';
+import { TaskImageProvider } from './TaskImageContext';
+import { taskImageRepository, type TaskImageRepository } from '../utils/taskImages';
 
 export interface BoardRepository { load: (signal?: AbortSignal) => Promise<BoardSnapshot>; save: (data: BoardData, revision: number) => Promise<BoardSnapshot>; }
 const remote: BoardRepository = { load: loadBoard, save: saveBoard };
-interface Props { user: BoardUser; onLogout: () => void; onAccessLost: () => void; repository?: BoardRepository; }
-export function Workspace({ user, onLogout, onAccessLost, repository = remote }: Props) {
+interface Props { user: BoardUser; onLogout: () => void; onAccessLost: () => void; repository?: BoardRepository; imageRepository?: TaskImageRepository; }
+export function Workspace({ user, onLogout, onAccessLost, repository = remote, imageRepository = taskImageRepository }: Props) {
   const [snapshot, setSnapshot] = useState<BoardSnapshot | null>(null);
   const current = useRef<BoardSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,8 +88,9 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote }:
   const saveTask = (draft: TaskDraft) => commit(data => {
     const now = new Date().toISOString();
     assertDraftCurrent(data, editing, draft.id);
-    return { ...data, tasks: draft.id ? data.tasks.map(t => t.id === draft.id ? { ...t, ...draft, id: t.id, updatedAt: now } : t)
-      : [{ ...draft, id: crypto.randomUUID(), createdAt: now, updatedAt: now }, ...data.tasks] };
+    const { newTaskId, ...task } = draft;
+    return { ...data, tasks: draft.id ? data.tasks.map(t => t.id === draft.id ? { ...t, ...task, id: t.id, updatedAt: now } : t)
+      : [{ ...task, id: newTaskId ?? crypto.randomUUID(), createdAt: now, updatedAt: now }, ...data.tasks] };
   });
   const move = (id: string, stage: string, before?: string) => { void commit(data => moveTask(data, id, stage, before)); };
   const assign = (id: string, assigneeId: string | null) => { void commit(data => assignTask(data, id, assigneeId)); };
@@ -114,7 +117,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote }:
   const overdue = data?.tasks.filter(t => t.status !== 'done' && evaluateDueDate(t.dueDate).isOverdue).length ?? 0;
   const completed = data?.tasks.filter(t => t.status === 'done').length ?? 0;
   const titles = { board: 'Tablica projektu', list: 'Wszystkie zadania', timeline: 'Terminy pod kontrolą', team: 'Ludzie i zadania', github: 'Eksport i kopie' };
-  return <div className="workspace">
+  return <TaskImageProvider repository={imageRepository}><div className="workspace">
     <Navbar activeTab={tab} onTab={setTab} user={user} onLogout={onLogout} onNew={() => newTask()} busy={busy || !data} />
     <main className="workspace-main">
       <div className="page-heading"><h1>{titles[tab]}</h1><div className="heading-details"><div className="project-stats"><span><b>{(data?.tasks.length ?? 0) - completed}</b> aktywnych</span><span><b>{completed}</b> zrobionych</span>{overdue > 0 && <span className="overdue"><b>{overdue}</b> po terminie</span>}</div><span className="sync-status" role="status" title={'Ostatnie sprawdzenie: ' + new Date(clock).toLocaleTimeString('pl')} >{busy ? <><LoaderCircle size={13} className="spin" />Zapisywanie</> : data ? <><Check size={13} />Zapisano</> : <><Cloud size={13} />Wczytywanie</>}</span><button className="icon-button" aria-label="Odśwież tablicę" disabled={busy} onClick={() => { setMessage(''); void refresh(); }}><RefreshCw size={16} /></button></div></div>
@@ -128,6 +131,6 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote }:
         <TaskModal isOpen={modal} onClose={() => setModal(false)} onSave={saveTask} onDelete={id => commit(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }))} initialTask={editing} defaultStatus={defaultStage} teamMembers={data.members} stages={data.stages} busy={busy} error={message} currentUser={user} />
       </>}
     </main>
-  </div>;
+  </div></TaskImageProvider>;
 }
 

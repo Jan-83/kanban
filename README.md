@@ -53,6 +53,14 @@ CSV, Markdown and full JSON exports include custom stages. Export is explicit an
 Below the checklist, **KOMENTARZ O STATUSIE** keeps separate entries with author and timestamp (displayed in Europe/Warsaw). Add entries with the button or Ctrl+Enter, then save the task; saving also includes any comment still in the composer. **STATUS ZAMKNIĘCIA** stores the work that justified completion. These fields use the existing shared board and revision checks, and survive task moves, assignments and JSON export/import. Older tasks start with empty fields. Both sections support the white and dark gray appearance.
 
 ## Deployment
+
+### Formatted descriptions and task photos
+In a task, **Powiększ / formatuj** opens a larger description editor with a formatting toolbar, HTML source and preview. Only safe text formatting and links are retained; scripts, embedded frames and remote images are removed. The plain description remains available to search, compact cards and CSV/Markdown exports. Full JSON exports retain HTML and photo metadata.
+
+**Dodaj zdjęcia** accepts up to 12 JPG, PNG or WebP files per task, each at most 5 MiB. Selected files upload to a private Supabase Storage bucket; saving the task links them to the shared board. Cancelling keeps the board unchanged. Thumbnail buttons on both the task form and board cards open a larger viewer with previous/next controls and arrow-key navigation. Cards show the first four images and a count for the rest.
+
+Apply `20261006214032_task_images.sql` to the configured Supabase project before deploying this feature. It creates the private `kanban-task-images` bucket with MIME/size limits and read/insert policies checked against the existing protected board membership. Download links are temporary and are refreshed while the workspace is open. Removing a photo from a task unlinks its metadata; originals are retained, and browser users cannot overwrite or delete storage objects. Board edits retain the existing revision checks. A JSON import to another Supabase project requires separately copying the image files.
+
 Enable GitHub Pages with GitHub Actions as its source. The deployment workflow uses the same checked source and public config; it does not apply migrations or create accounts. Merge the reviewed change only after the backend and first account are ready. The previous site remains vulnerable until the new frontend is actually deployed.
 
 Keep `package-lock.json` committed: both the dependency cache and `npm ci` require it. Use Node.js 24 for the same toolchain as CI.

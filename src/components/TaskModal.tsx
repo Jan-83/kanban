@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import { Clock, Plus, Trash2, X } from 'lucide-react';
-import type { BoardStage, BoardUser, StatusComment, Subtask, Task, TaskPriority, TeamMember } from '../types/kanban';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { Clock, ImagePlus, Maximize2, Plus, Trash2, X } from 'lucide-react';
+import type { BoardStage, BoardUser, StatusComment, Subtask, Task, TaskImage, TaskPriority, TeamMember } from '../types/kanban';
 import { formatDateTimeForInput } from '../utils/dateUtils';
 import { PRIORITIES } from './TaskCard';
+import { sanitizeDescription } from '../utils/richDescription';
+import { MAX_TASK_IMAGES, validateImageContent } from '../utils/taskImageValidation';
+import { TaskImageGallery, type LocalImagePreview } from './TaskImageGallery';
+import { useTaskImages } from './TaskImageContext';
 
-export type TaskDraft = Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
+const DescriptionEditor = lazy(() => import('./DescriptionEditor').then(module => ({ default: module.DescriptionEditor })));
+
+export type TaskDraft = Omit<Task, 'id' | 'createdAt' | 'updatedAt'> & { id?: string; newTaskId?: string };
 
 interface Props {
   isOpen: boolean;
@@ -37,13 +43,26 @@ export function TaskModal({
   defaultStatus,
   teamMembers,
   stages,
-  busy,
+  busy: boardBusy,
   error,
   currentUser,
 }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [descriptionHtml, setDescriptionHtml] = useState('');
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [images, setImages] = useState<TaskImage[]>([]);
+  const [pendingImages, setPendingImages] = useState<(LocalImagePreview & { file: File })[]>([]);
+  const [photoTaskId, setPhotoTaskId] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [selectingImages, setSelectingImages] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
+  const [localError, setLocalError] = useState('');
+  const photoInput = useRef<HTMLInputElement>(null);
+  const previewUrls = useRef(new Set<string>());
+  const imageRepository = useTaskImages();
+  const busy = boardBusy || uploading || selectingImages;
   const [status, setStatus] = useState(defaultStatus);
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [dueDate, setDueDate] = useState('');
@@ -56,12 +75,21 @@ export function TaskModal({
   const [closingStatus, setClosingStatus] = useState('');
 
   useEffect(() => {
+    previewUrls.current.forEach(url => URL.revokeObjectURL(url));
+    previewUrls.current.clear();
+    setPendingImages([]);
+    setDescriptionOpen(false);
     if (!isOpen) {
       dialog.current?.close();
       return;
     }
     setTitle(initialTask?.title ?? '');
     setDescription(initialTask?.description ?? '');
+    setDescriptionHtml(initialTask?.descriptionHtml ?? '');
+    setImages(initialTask?.images?.map(image => ({ ...image })) ?? []);
+    setPhotoTaskId(initialTask?.id ?? crypto.randomUUID());
+    setLocalError('');
+    setUploadProgress('');
     setStatus(initialTask?.status ?? defaultStatus);
     setPriority(initialTask?.priority ?? 'medium');
     setDueDate(formatDateTimeForInput(initialTask?.dueDate ?? ''));
@@ -74,6 +102,38 @@ export function TaskModal({
     setClosingStatus(initialTask?.closingStatus ?? '');
     dialog.current?.showModal();
   }, [isOpen, initialTask, defaultStatus]);
+  useEffect(() => () => { previewUrls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
+  useEffect(() => {
+    if (!uploading && !selectingImages) return;
+    const protectUpload = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener('beforeunload', protectUpload);
+    return () => window.removeEventListener('beforeunload', protectUpload);
+  }, [uploading, selectingImages]);
+
+  const selectImages = async (files: File[]) => {
+    if (!files.length) return;
+    setLocalError('');
+    if (images.length + pendingImages.length + files.length > MAX_TASK_IMAGES) { setLocalError('Do zadania można dodać maksymalnie 12 zdjęć.'); return; }
+    setSelectingImages(true);
+    try {
+      for (const file of files) await validateImageContent(file);
+      const added = files.map(file => { const url = URL.createObjectURL(file); previewUrls.current.add(url); return { id: crypto.randomUUID(), name: file.name, file, url }; });
+      setPendingImages(previous => [...previous, ...added]);
+      for (const [index, image] of added.entries()) {
+        setUploadProgress('Przesyłanie zdjęć: ' + (index + 1) + ' / ' + added.length);
+        const uploaded = await imageRepository.upload(photoTaskId, image.file);
+        setImages(previous => [...previous, uploaded]);
+        setPendingImages(previous => previous.filter(pending => pending.id !== image.id));
+      }
+    } catch (error) { setLocalError(error instanceof Error ? error.message : 'Nie udało się dodać zdjęć.'); }
+    finally { setSelectingImages(false); setUploadProgress(''); }
+  };
+  const removeImage = (id: string) => {
+    setImages(previous => previous.filter(image => image.id !== id));
+    const pending = pendingImages.find(image => image.id === id);
+    if (pending) { URL.revokeObjectURL(pending.url); previewUrls.current.delete(pending.url); }
+    setPendingImages(previous => previous.filter(image => image.id !== id));
+  };
 
   const addSubtask = () => {
     if (subtask.trim() && subtasks.length < 100) {
@@ -97,6 +157,18 @@ export function TaskModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
+    setUploading(true); setLocalError('');
+    try {
+    const finalImages = [...images];
+    for (const [index, image] of pendingImages.entries()) {
+      setUploadProgress('Przesyłanie zdjęć: ' + (index + 1) + ' / ' + pendingImages.length);
+      const uploaded = await imageRepository.upload(photoTaskId, image.file);
+      finalImages.push(uploaded);
+      setImages(previous => [...previous, uploaded]);
+      setPendingImages(previous => previous.filter(pending => pending.id !== image.id));
+    }
+    setUploadProgress('');
     let finalComments = [...statusComments];
     const pendingComment = newComment.trim();
     if (pendingComment && statusComments.length < 500) {
@@ -111,8 +183,11 @@ export function TaskModal({
     const ok = await onSave({
       ...(initialTask ?? {}),
       id: initialTask?.id,
+      ...(!initialTask ? { newTaskId: photoTaskId } : {}),
       title: title.trim(),
       description: description.trim(),
+      descriptionHtml: descriptionHtml ? sanitizeDescription(descriptionHtml) : '',
+      images: finalImages,
       status,
       priority,
       dueDate,
@@ -123,9 +198,11 @@ export function TaskModal({
       closingStatus: closingStatus.trim(),
     });
     if (ok) onClose();
+    } catch (error) { setLocalError(error instanceof Error ? error.message : 'Nie zapisano zadania.'); }
+    finally { setUploading(false); setUploadProgress(''); }
   };
 
-  return (
+  return (<>
     <dialog
       ref={dialog}
       className="task-dialog"
@@ -148,6 +225,7 @@ export function TaskModal({
       <form onSubmit={handleSubmit}>
         <fieldset disabled={busy} className="form-stack">
           {error && <p className="notice error" role="alert">{error}</p>}
+          {localError && <p className="notice error" role="alert">{localError}</p>}
           <label>
             Tytuł zadania
             <input
@@ -159,16 +237,26 @@ export function TaskModal({
               placeholder="Co mamy zrobić?"
             />
           </label>
-          <label>
-            Opis
-            <textarea
+          <div className="description-field">
+            <div className="section-title-row"><label htmlFor="task-description" className="field-label">Opis</label><button type="button" className="button description-expand" onClick={() => setDescriptionOpen(true)}><Maximize2 size={14} />Powiększ / formatuj</button></div>
+            {descriptionHtml ? <div className="rich-description description-summary" id="task-description" dangerouslySetInnerHTML={{ __html: sanitizeDescription(descriptionHtml) }} /> : <textarea
+              id="task-description"
               value={description}
               onChange={e => setDescription(e.target.value)}
               maxLength={10000}
               rows={3}
               placeholder="Szczegóły, materiały, oczekiwany efekt…"
-            />
-          </label>
+            />}
+          </div>
+          <section className="task-image-editor" aria-label="Zdjęcia do zadania">
+            <div className="section-title-row"><span className="field-label">Zdjęcia <span className="muted">{images.length + pendingImages.length} / {MAX_TASK_IMAGES}</span></span>
+              <button type="button" className="button" disabled={images.length + pendingImages.length >= MAX_TASK_IMAGES} onClick={() => photoInput.current?.click()}><ImagePlus size={15} />Dodaj zdjęcia</button></div>
+            <input ref={photoInput} type="file" className="visually-hidden" aria-label="Wybierz zdjęcia do zadania" accept="image/jpeg,image/png,image/webp" multiple onChange={event => { void selectImages(Array.from(event.target.files ?? [])); event.target.value = ''; }} />
+            <TaskImageGallery images={images} localImages={pendingImages} onRemove={removeImage} disabled={busy} />
+            <p className="muted hint-small">JPG, PNG lub WebP, do 5 MB. Kliknij miniaturę, aby powiększyć zdjęcie.</p>
+            {!!pendingImages.length && <p className="muted hint-small">Nieprzesłane zdjęcia wyślemy ponownie przy zapisie zadania.</p>}
+            {images.length + pendingImages.length > 0 && <p className="muted hint-small">Zmiany zdjęć dołączysz do tablicy przyciskiem „{initialTask ? 'Zapisz zmiany' : 'Utwórz zadanie'}”.</p>}
+          </section>
           <div className="form-grid">
             <label>
               Etap
@@ -347,10 +435,12 @@ export function TaskModal({
             )}
             <span className="spacer" />
             <button type="button" className="button" onClick={onClose}>Anuluj</button>
-            <button className="button primary">{busy ? 'Zapisywanie…' : initialTask ? 'Zapisz zmiany' : 'Utwórz zadanie'}</button>
+            <button className="button primary">{uploadProgress || (busy ? 'Zapisywanie…' : initialTask ? 'Zapisz zmiany' : 'Utwórz zadanie')}</button>
           </div>
         </fieldset>
       </form>
     </dialog>
+    {descriptionOpen && <Suspense fallback={null}><DescriptionEditor text={description} html={descriptionHtml} onClose={() => setDescriptionOpen(false)} onApply={(text, html) => { setDescription(text); setDescriptionHtml(html); setDescriptionOpen(false); }} /></Suspense>}
+    </>
   );
 }

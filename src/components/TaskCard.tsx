@@ -11,10 +11,11 @@ interface Props {
   onEdit: (task: Task) => void;
   onMove: (taskId: string, stageId: string) => void;
   onAssign?: (taskId: string, assigneeId: string | null) => void;
+  onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   disabled?: boolean;
   overlay?: boolean;
 }
-function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, disabled, overlay, handle }: Props & { handle?: React.ReactNode }) {
+function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, onToggleSubtask, disabled, overlay, handle }: Props & { handle?: React.ReactNode }) {
   const person = teamMembers.find(m => m.id === task.assigneeId);
   const due = evaluateDueDate(task.dueDate, task.status === 'done');
   const completed = task.subtasks.filter(s => s.completed).length;
@@ -27,6 +28,31 @@ function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, disa
       <div className="card-progress-label"><span><CheckSquare size={12} />Zadania cząstkowe</span><span>{completed}/{total}</span></div>
       <progress value={completed} max={total} aria-label={'Postęp zadania: ' + task.title} aria-valuetext={completed + ' z ' + total + ' podzadań ukończonych'} />
     </div>}
+    {total > 0 && (
+      <div className="card-subtasks-preview" aria-label="Lista zadań cząstkowych">
+        {task.subtasks.map(s => (
+          <label
+            key={s.id}
+            className={'card-subtask-item' + (s.completed ? ' is-completed' : '')}
+            onClick={e => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={s.completed}
+              disabled={disabled || overlay}
+              aria-label={s.title}
+              onChange={e => {
+                e.stopPropagation();
+                onToggleSubtask?.(task.id, s.id);
+              }}
+            />
+            <span className="card-subtask-text" title={s.title}>
+              {s.title}
+            </span>
+          </label>
+        ))}
+      </div>
+    )}
     <div className="card-footer">
       <span className={due.isOverdue ? 'card-date overdue' : 'card-date'} title={due.badgeText}><CalendarDays size={13} />{task.dueDate ? due.formatted : 'Bez terminu'}</span>
       {task.statusComments && task.statusComments.length > 0 && (

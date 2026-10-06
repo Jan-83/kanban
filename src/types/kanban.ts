@@ -40,6 +40,7 @@ export interface Task {
   priority: TaskPriority;
   dueDate: string; // ISO string YYYY-MM-DD or YYYY-MM-DDTHH:mm
   assigneeId: string | null;
+  assigneeIds?: string[];
   tags: string[];
   subtasks: Subtask[];
   statusComments?: StatusComment[];

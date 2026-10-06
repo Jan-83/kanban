@@ -120,13 +120,29 @@ h2 { font-size: 14px; font-weight: 700; }
 .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--soft-border); padding-top: 4px; margin-top: 6px; }
 .card-date, .card-checklist { display: inline-flex; align-items: center; gap: 5px; font-size: 9px; color: var(--muted); }
 .card-date.overdue { color: var(--danger); }
-.card-assignee-pill { position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 1px 5px 1px 2px; background: var(--surface-subtle); border: 1px solid var(--soft-border); border-radius: 20px; cursor: pointer; min-width: 0; max-width: 128px; transition: background .15s, border-color .15s; }
+.card-assignee-pill { position: relative; margin-left: auto; display: inline-flex; align-items: center; gap: 4px; padding: 1px 5px 1px 2px; background: var(--surface-subtle); border: 1px solid var(--soft-border); border-radius: 20px; cursor: pointer; min-width: 0; max-width: 190px; transition: background .15s, border-color .15s; }
 .card-assignee-pill:hover { background: var(--column); border-color: var(--hover-border); }
-.card-assignee-pill:has(.card-assignee-select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 1px; }
+.card-assignee-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .card-assignee-pill .avatar.small { margin-left: 0; width: 18px; height: 18px; font-size: 8px; flex-shrink: 0; background: color-mix(in srgb, var(--person-color, var(--accent)) 14%, var(--surface)); color: color-mix(in srgb, var(--person-color, var(--accent)) 60%, var(--text)); }
 .card-assignee-name { font-size: 10px; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-assignee-arrow { color: var(--muted); flex-shrink: 0; }
-.card-assignee-select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border-radius: 20px; }
+.assignee-avatars { display: inline-flex; align-items: center; flex-shrink: 0; }
+.assignee-avatars .avatar + .avatar { margin-left: -5px; box-shadow: -1px 0 0 var(--surface); }
+.list-assignees { margin-left: 0; max-width: 220px; padding: 4px 7px 4px 3px; }
+.assignee-popup { position: fixed; z-index: 120; max-height: calc(100dvh - 24px); padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); box-shadow: 0 10px 35px #0003; font-size: 12px; overflow-y: auto; }
+.assignee-popup fieldset, .task-assignees-field { padding: 0; margin: 0; border: 0; min-width: 0; }
+.assignee-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.assignee-option { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 11px; cursor: pointer; min-width: 0; }
+.form-stack .assignee-option { display: inline-flex; font-size: 11px; }
+.assignee-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+.assignee-option input { width: 13px; height: 13px; margin: 0; padding: 0; flex-shrink: 0; }
+.assignee-option .avatar.small { margin: 0; width: 20px; height: 20px; font-size: 8px; flex-shrink: 0; background: color-mix(in srgb, var(--person-color, var(--accent)) 14%, var(--surface)); color: color-mix(in srgb, var(--person-color, var(--accent)) 60%, var(--text)); }
+.assignee-option > span:last-child { overflow-wrap: anywhere; }
+.assignee-popup .assignee-options { flex-direction: column; max-height: 240px; overflow-y: auto; margin-top: 10px; }
+.assignee-popup-actions, .assignee-field-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; }
+.assignee-popup-actions .button { font-size: 11px; padding: 6px 9px; }
+.assignee-field-footer .button { font-size: 9px; padding: 3px 6px; }
+.task-assignees-field .assignee-options { max-height: 160px; overflow-y: auto; }
 .card-stage { border: 0; border-radius: 4px; background: transparent; color: var(--muted); min-width: 0; max-width: 52%; font-size: 9px; padding: 3px 0; text-overflow: ellipsis; }
 .column-add { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 11px; color: var(--muted); border: none; background: transparent; width: 100%; padding: 9px 2px 3px; }
 .column-add:hover { color: var(--accent); }

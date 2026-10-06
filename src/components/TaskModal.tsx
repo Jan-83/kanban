@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Clock, ImagePlus, Maximize2, Plus, Trash2, X } from 'lucide-react';
 import type { BoardStage, BoardUser, StatusComment, Subtask, Task, TaskImage, TaskPriority, TeamMember } from '../types/kanban';
 import { formatDateTimeForInput } from '../utils/dateUtils';
@@ -7,6 +7,8 @@ import { sanitizeDescription } from '../utils/richDescription';
 import { MAX_TASK_IMAGES, validateImageContent } from '../utils/taskImageValidation';
 import { TaskImageGallery, type LocalImagePreview } from './TaskImageGallery';
 import { useTaskImages } from './TaskImageContext';
+import { taskAssigneeIds } from '../utils/board';
+import { TaskAssigneeOptions } from './TaskAssigneePicker';
 
 const DescriptionEditor = lazy(() => import('./DescriptionEditor').then(module => ({ default: module.DescriptionEditor })));
 const TASK_COLORS = [
@@ -56,6 +58,7 @@ export function TaskModal({
   const [description, setDescription] = useState('');
   const [descriptionHtml, setDescriptionHtml] = useState('');
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const descriptionInput = useRef<HTMLTextAreaElement>(null);
   const [images, setImages] = useState<TaskImage[]>([]);
   const [pendingImages, setPendingImages] = useState<(LocalImagePreview & { file: File })[]>([]);
   const [photoTaskId, setPhotoTaskId] = useState('');
@@ -71,7 +74,7 @@ export function TaskModal({
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [taskColor, setTaskColor] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [tags, setTags] = useState('');
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [subtask, setSubtask] = useState('');
@@ -99,7 +102,7 @@ export function TaskModal({
     setPriority(initialTask?.priority ?? 'medium');
     setTaskColor(initialTask?.color ?? '');
     setDueDate(formatDateTimeForInput(initialTask?.dueDate ?? ''));
-    setAssigneeId(initialTask?.assigneeId ?? '');
+    setAssigneeIds(initialTask ? [...taskAssigneeIds(initialTask)] : []);
     setTags(initialTask?.tags.join(', ') ?? '');
     setSubtasks(initialTask?.subtasks.map(s => ({ ...s })) ?? []);
     setSubtask('');
@@ -108,6 +111,23 @@ export function TaskModal({
     setClosingStatus(initialTask?.closingStatus ?? '');
     dialog.current?.showModal();
   }, [isOpen, initialTask, defaultStatus]);
+  useLayoutEffect(() => {
+    const field = descriptionInput.current;
+    if (!isOpen || !field) return;
+    const resize = () => {
+      const css = getComputedStyle(field);
+      const border = parseFloat(css.borderTopWidth) + parseFloat(css.borderBottomWidth);
+      field.style.height = 'auto';
+      field.style.height = Math.min(parseFloat(css.maxHeight), Math.max(parseFloat(css.minHeight), field.scrollHeight + border)) + 'px';
+    };
+    resize();
+    let width = field.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (field.clientWidth !== width) { width = field.clientWidth; resize(); }
+    });
+    observer.observe(field);
+    return () => observer.disconnect();
+  }, [isOpen, description, descriptionHtml]);
   useEffect(() => () => { previewUrls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
   useEffect(() => {
     if (!uploading && !selectingImages) return;
@@ -198,7 +218,8 @@ export function TaskModal({
       priority,
       color: taskColor || undefined,
       dueDate,
-      assigneeId: assigneeId || null,
+      assigneeId: assigneeIds[0] ?? null,
+      assigneeIds,
       tags: [...new Set(tags.split(',').map(t => t.trim()).filter(Boolean))],
       subtasks,
       statusComments: finalComments,
@@ -248,6 +269,7 @@ export function TaskModal({
             <div className="section-title-row"><label htmlFor="task-description" className="field-label">Opis</label><button type="button" className="button description-expand" onClick={() => setDescriptionOpen(true)}><Maximize2 size={14} />Powiększ / formatuj</button></div>
             {descriptionHtml ? <div className="rich-description description-summary" id="task-description" dangerouslySetInnerHTML={{ __html: sanitizeDescription(descriptionHtml) }} /> : <textarea
               id="task-description"
+              ref={descriptionInput}
               value={description}
               onChange={e => setDescription(e.target.value)}
               maxLength={10000}
@@ -281,13 +303,11 @@ export function TaskModal({
               Termin
               <input type="datetime-local" value={dueDate} onChange={e => setDueDate(e.target.value)} />
             </label>
-            <label>
-              Osoba odpowiedzialna
-              <select value={assigneeId} onChange={e => setAssigneeId(e.target.value)}>
-                <option value="">Nieprzypisane</option>
-                {teamMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </label>
+            <fieldset className="task-assignees-field">
+              <legend className="field-label">Osoby odpowiedzialne</legend>
+              <TaskAssigneeOptions members={teamMembers} value={assigneeIds} onChange={setAssigneeIds} />
+              <div className="assignee-field-footer"><span className="muted hint-small">Możesz wybrać kilka osób.</span>{!!assigneeIds.length && <button type="button" className="button" onClick={() => setAssigneeIds([])}>Wyczyść wybór</button>}</div>
+            </fieldset>
           </div>
           <fieldset className="task-color-picker">
             <legend className="field-label">Kolor zadania <span className="muted hint-small">Obramowanie kafelka na tablicy</span></legend>

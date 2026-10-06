@@ -1,10 +1,12 @@
-import { CalendarDays, CheckSquare, ChevronDown, GripVertical, MessageSquare, UserRound } from 'lucide-react';
+import { CalendarDays, CheckSquare, GripVertical, MessageSquare } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
 import { evaluateDueDate } from '../utils/dateUtils';
 import { TaskImageGallery } from './TaskImageGallery';
+import { taskAssigneeIds } from '../utils/board';
+import { TaskAssigneePicker } from './TaskAssigneePicker';
 export const PRIORITIES = { urgent: 'Pilny', high: 'Wysoki', medium: 'Średni', low: 'Niski' };
 interface Props {
   task: Task;
@@ -12,40 +14,19 @@ interface Props {
   stages: BoardStage[];
   onEdit: (task: Task) => void;
   onMove: (taskId: string, stageId: string) => void;
-  onAssign?: (taskId: string, assigneeId: string | null) => void;
+  onAssign?: (taskId: string, assigneeIds: string[]) => void;
   onToggleSubtask?: (taskId: string, subtaskId: string) => void;
   disabled?: boolean;
   overlay?: boolean;
 }
 function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, onToggleSubtask, disabled, overlay, handle }: Props & { handle?: React.ReactNode }) {
-  const person = teamMembers.find(m => m.id === task.assigneeId);
   const due = evaluateDueDate(task.dueDate, task.status === 'done');
   const completed = task.subtasks.filter(s => s.completed).length;
   const total = task.subtasks.length;
   return <>
     <div className="card-top"><span className={'priority ' + task.priority}><span />{PRIORITIES[task.priority]}</span>
-      <div className="card-assignee-pill" title={person ? `Osoba: ${person.name} (kliknij, aby zmienić)` : 'Nieprzypisane (kliknij, aby przypisać)'}>
-        <span className="avatar small" style={person ? { '--person-color': person.color } as React.CSSProperties : undefined}>
-          {person ? person.name.split(' ').map(x => x[0]).slice(0, 2).join('') : <UserRound size={11} />}
-        </span>
-        <span className="card-assignee-name">{person ? person.name : 'Przypisz'}</span>
-        <ChevronDown size={11} className="card-assignee-arrow" />
-        {!overlay && (
-          <select
-            className="card-assignee-select"
-            aria-label={'Zmień osobę dla zadania: ' + task.title}
-            value={task.assigneeId ?? ''}
-            disabled={disabled}
-            onChange={e => onAssign?.(task.id, e.target.value || null)}
-            onClick={e => e.stopPropagation()}
-          >
-            <option value="">Nieprzypisane</option>
-            {teamMembers.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
-            ))}
-          </select>
-        )}
-      </div>
+      <TaskAssigneePicker compact members={teamMembers} value={taskAssigneeIds(task)} taskTitle={task.title}
+        disabled={disabled || overlay || !onAssign} onChange={ids => onAssign?.(task.id, ids)} />
       {handle}
     </div>
     <button className="card-open" onClick={() => onEdit(task)} disabled={disabled || overlay}><h3>{task.title}</h3>{task.description && <p>{task.description}</p>}</button>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import type { BoardData, TeamMember } from '../types/kanban';
-import { STAGE_COLORS } from '../utils/board';
+import { STAGE_COLORS, taskAssigneeIds } from '../utils/board';
 
 interface Props {
   data: BoardData;
@@ -118,7 +118,7 @@ export function TeamView({ data, onAdd, onRemove, onUpdate, busy }: Props) {
                 <p>{m.role || 'Zespół'}{m.email && ' · ' + m.email}</p>
               </div>
               <span className="count">
-                {data.tasks.filter(t => t.assigneeId === m.id && t.status !== 'done').length} aktywnych
+                {data.tasks.filter(t => taskAssigneeIds(t).includes(m.id) && t.status !== 'done').length} aktywnych
               </span>
               <div className="person-actions">
                 <button

@@ -54,7 +54,7 @@ test('Postgres authorization boundary and concurrent writes', async t => {
         await denied(save(board, 0), '40001');
       });
     });
-    await t.test('member saves multiple assignees, long descriptions, task colors and status notes through the revision RPC', async () => {
+    await t.test('member saves multiple assignees, renamed stages, long descriptions, task colors and status notes through the revision RPC', async () => {
       await as('authenticated', alice, async () => {
         const data = { ...emptyBoard(), members: [
           { id: 'person-alice', name: 'Alice', email: 'alice@example.invalid', role: 'Projekt', color: '#6366f1', status: 'active' },
@@ -65,6 +65,7 @@ test('Postgres authorization boundary and concurrent writes', async t => {
         assert.equal(Number((await save(board, 0, data)).rows[0].revision), 1);
         assert.deepEqual((await db.query<any>('select data from public.kanban_boards')).rows[0].data, data);
         const changed = structuredClone(data);
+        changed.stages[2].title = 'Odebrane';
         changed.tasks[0].assigneeId = 'person-bob';
         changed.tasks[0].assigneeIds = ['person-bob'];
         changed.tasks[0].color = '#db2777';

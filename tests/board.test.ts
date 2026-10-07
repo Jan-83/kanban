@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addStage, assertDraftCurrent, emptyBoard, moveStage, moveTask, assignTask, parseBoard, parseLegacyBoard, setStageColor } from '../src/utils/board';
+import { addStage, assertDraftCurrent, emptyBoard, moveStage, moveTask, assignTask, parseBoard, parseLegacyBoard, renameStage, setStageColor } from '../src/utils/board';
 import { INITIAL_TASKS, INITIAL_MEMBERS } from '../src/utils/storage';
 import { clearLegacyAuthentication } from '../src/utils/authStorage';
 import { generateGitHubIssuesMarkdown } from '../src/utils/githubExport';
@@ -13,6 +13,42 @@ test('custom stage survives serialization and is inserted before Done', () => {
   assert.throws(() => addStage(data, 'DO AKCEPTACJI', '#6366f1', 'other'));
   assert.throws(() => addStage(data, '  ', '#6366f1', 'other'));
 });
+test('renaming built-in and custom stages preserves IDs, task links, colors, order and completed status', () => {
+  const original: BoardData = { ...moveStage(addStage(emptyBoard(), 'Weryfikacja', '#db2777', 'review'), 'done', 'todo'), tasks: [task('a'), task('b', 'in_progress'), task('c', 'done'), task('d', 'review')] };
+  let changed = original;
+  for (const stage of original.stages) changed = renameStage(changed, stage.id, '  Nowy ' + stage.title + '  ', stage.title);
+  const reloaded = parseBoard(JSON.parse(JSON.stringify(changed)));
+  assert.deepEqual(reloaded.stages.map(s => [s.id, s.color]), original.stages.map(s => [s.id, s.color]));
+  assert.deepEqual(reloaded.stages.map(s => s.title), original.stages.map(s => 'Nowy ' + s.title));
+  assert.deepEqual(reloaded.tasks, original.tasks);
+  assert.equal(changed.tasks, original.tasks);
+  assert.equal(reloaded.tasks.filter(t => t.status === 'done').length, 1);
+  assert.match(generateGitHubIssuesMarkdown(reloaded.tasks, [], reloaded.stages), /Nowy Weryfikacja/);
+  assert.deepEqual(original.stages.map(s => s.title), ['Zrobione', 'Do zrobienia', 'W trakcie', 'Weryfikacja']);
+});
+
+test('renaming stages rejects duplicate or invalid names without mutating the board', () => {
+  const original = addStage(emptyBoard(), 'Do odbioru', '#db2777', 'review');
+  const saved = JSON.stringify(original);
+  for (const name of ['', '   ', 'x'.repeat(49), 'W trakcie', '  w TrAkCiE  ', 'do ODBIORU']) {
+    assert.throws(() => renameStage(original, 'todo', name), /unikalną nazwę/);
+    assert.equal(JSON.stringify(original), saved);
+  }
+  assert.throws(() => renameStage(original, 'missing', 'Nowy'), /nie istnieje/);
+  assert.equal(renameStage(original, 'todo', '  Do zrobienia  '), original);
+  assert.equal(renameStage(original, 'todo', 'x'.repeat(48)).stages[0].title.length, 48);
+});
+
+test('a stage rename cannot overwrite a concurrent rename but preserves unrelated task and color changes', () => {
+  const original = { ...emptyBoard(), tasks: [task('a')] };
+  const renamed = renameStage(original, 'todo', 'Planowanie', 'Do zrobienia');
+  assert.throws(() => renameStage(renamed, 'todo', 'Backlog', 'Do zrobienia'), /podczas edycji/);
+  const latest = setStageColor({ ...original, tasks: [{ ...task('a'), description: 'Teammate update' }] }, 'todo', '#0284c7');
+  const result = renameStage(latest, 'todo', 'Planowanie', 'Do zrobienia');
+  assert.equal(result.tasks[0].description, 'Teammate update');
+  assert.equal(result.stages[0].color, '#0284c7');
+});
+
 test('original board migrates without dropping tasks with deleted assignees', () => {
   const result = parseLegacyBoard(INITIAL_TASKS, INITIAL_MEMBERS);
   assert.equal(result.data.tasks.length, INITIAL_TASKS.length);

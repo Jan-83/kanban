@@ -31,6 +31,20 @@ export function addStage(data: BoardData, title: string, color: string, id: stri
   return { ...data, stages };
 }
 
+export function renameStage(data: BoardData, stageId: string, title: string, expectedTitle?: string): BoardData {
+  const stage = data.stages.find(s => s.id === stageId);
+  if (!stage) throw new Error('Ten etap już nie istnieje. Odśwież tablicę.');
+  if (expectedTitle !== undefined && stage.title !== expectedTitle) {
+    throw new Error('Ktoś zmienił nazwę tego etapu podczas edycji. Zamknij menu i otwórz je ponownie, aby zmienić aktualną nazwę.');
+  }
+  const name = title.trim();
+  if (!name || name.length > 48 || data.stages.some(s => s.id !== stageId && s.title.trim().toLocaleLowerCase('pl') === name.toLocaleLowerCase('pl'))) {
+    throw new Error('Podaj unikalną nazwę etapu (1–48 znaków).');
+  }
+  if (name === stage.title) return data;
+  return { ...data, stages: data.stages.map(s => s.id === stageId ? { ...s, title: name } : s) };
+}
+
 export function moveStage(data: BoardData, stageId: string, targetId: string): BoardData {
   const from = data.stages.findIndex(s => s.id === stageId);
   const to = data.stages.findIndex(s => s.id === targetId);

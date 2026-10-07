@@ -45,6 +45,8 @@ Custom stages are inserted before Zrobione. The built-in `done` stage is the com
 
 Stages can also be dragged by their heading grip, including Zrobione. Moving a stage changes only its position, never its task statuses. The heading menu offers eight colors and left/right buttons as an alternative to dragging. Stage order and colors are saved through the same revision-protected board write as tasks.
 
+Every stage's heading menu also offers **Nazwa etapu** and **Zmień** (or Enter). Names must be unique ignoring case and outer whitespace, with 1–48 characters. Built-in and custom stages can be renamed; their IDs, task links, completion meaning, order and colors stay unchanged. Opening the menu loads the current name. A concurrent rename is rejected without overwriting another person's change; reopen the menu to retry against the latest name.
+
 The header's sun/moon buttons select a white or dark gray appearance. This is a per-browser preference (`kanban-theme` in local storage), independent of shared board data. Compact cards retain assignment, stage selection and checklist progress; opening a card shows its full title and description.
 
 CSV, Markdown and full JSON exports include custom stages. Export is explicit and local; there is no simulated GitHub sync.

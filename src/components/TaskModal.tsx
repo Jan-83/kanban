@@ -7,7 +7,7 @@ import { sanitizeDescription } from '../utils/richDescription';
 import { MAX_TASK_IMAGES, validateImageContent } from '../utils/taskImageValidation';
 import { TaskImageGallery, type LocalImagePreview } from './TaskImageGallery';
 import { useTaskImages } from './TaskImageContext';
-import { taskAssigneeIds } from '../utils/board';
+import { getTaskDisplayId, taskAssigneeIds } from '../utils/board';
 import { TaskAssigneeOptions } from './TaskAssigneePicker';
 
 const DescriptionEditor = lazy(() => import('./DescriptionEditor').then(module => ({ default: module.DescriptionEditor })));
@@ -25,6 +25,7 @@ interface Props {
   onDelete: (id: string) => Promise<boolean>;
   initialTask: Task | null;
   defaultStatus: string;
+  defaultNewTaskId?: string;
   teamMembers: TeamMember[];
   stages: BoardStage[];
   busy: boolean;
@@ -47,6 +48,7 @@ export function TaskModal({
   onDelete,
   initialTask,
   defaultStatus,
+  defaultNewTaskId,
   teamMembers,
   stages,
   busy: boardBusy,
@@ -95,7 +97,7 @@ export function TaskModal({
     setDescription(initialTask?.description ?? '');
     setDescriptionHtml(initialTask?.descriptionHtml ?? '');
     setImages(initialTask?.images?.map(image => ({ ...image })) ?? []);
-    setPhotoTaskId(initialTask?.id ?? crypto.randomUUID());
+    setPhotoTaskId(initialTask?.id ?? defaultNewTaskId ?? crypto.randomUUID());
     setLocalError('');
     setUploadProgress('');
     setStatus(initialTask?.status ?? defaultStatus);
@@ -248,7 +250,10 @@ export function TaskModal({
       <div className="dialog-heading">
         <div>
           <p className="eyebrow">ZADANIA ZESPOŁU</p>
-          <h2 id="task-dialog-title">{initialTask ? 'Edytuj zadanie' : 'Nowe zadanie'}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h2 id="task-dialog-title">{initialTask ? 'Edytuj zadanie' : 'Nowe zadanie'}</h2>
+            {initialTask && <span className="task-id-badge" title={'ID: ' + initialTask.id}>{getTaskDisplayId(initialTask)}</span>}
+          </div>
         </div>
         <button className="icon-button" onClick={onClose} disabled={busy} aria-label="Zamknij edycję">
           <X size={20} />

@@ -4,7 +4,7 @@ import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordin
 import { GripVertical, ListFilter, Plus, Search, X } from 'lucide-react';
 import type { BoardData, Task } from '../types/kanban';
 import { evaluateDueDate } from '../utils/dateUtils';
-import { STAGE_COLORS, taskAssigneeIds } from '../utils/board';
+import { getTaskDisplayId, STAGE_COLORS, taskAssigneeIds } from '../utils/board';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskOverlay, PRIORITIES } from './TaskCard';
 interface Props { data: BoardData; onEdit: (task: Task) => void; onNew: (stage: string) => void; onMove: (id: string, stage: string, before?: string) => void; onAssign?: (id: string, assigneeIds: string[]) => void; onToggleSubtask?: (id: string, subtaskId: string) => void; onAddStage: (name: string, color: string) => Promise<boolean>; onMoveStage: (id: string, target: string) => void; onStageColor: (id: string, color: string) => Promise<boolean>; onRenameStage: (id: string, title: string, expectedTitle: string) => Promise<boolean>; disabled: boolean; }
@@ -28,7 +28,10 @@ export function KanbanBoard({ data, onEdit, onNew, onMove, onAssign, onToggleSub
   const sensors = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }), useSensor(KeyboardSensor, { coordinateGetter: keyboardCoordinates }));
   const visible = useMemo(() => data.tasks.filter(t => {
     const due = evaluateDueDate(t.dueDate, t.status === 'done');
-    return (!query || (t.title + ' ' + t.description + ' ' + t.tags.join(' ')).toLocaleLowerCase('pl').includes(query.toLocaleLowerCase('pl')))
+    const displayId = getTaskDisplayId(t);
+    const searchTarget = `${t.title} ${t.description} ${t.tags.join(' ')} ${t.id} #${t.id} ${displayId} #${displayId} ${displayId.replace('-', ' ')} ${t.githubIssueNumber ? '#' + t.githubIssueNumber + ' ' + t.githubIssueNumber : ''}`.toLocaleLowerCase('pl');
+    const q = query.trim().toLocaleLowerCase('pl');
+    return (!q || searchTarget.includes(q))
       && (!person || (person === 'unassigned' ? !taskAssigneeIds(t).length : taskAssigneeIds(t).includes(person)))
       && (!priority || priority === t.priority)
       && (!deadline || (t.status !== 'done' && (deadline === 'overdue' ? due.isOverdue : due.isToday)));
@@ -55,7 +58,7 @@ export function KanbanBoard({ data, onEdit, onNew, onMove, onAssign, onToggleSub
     onMove(taskId, target.status, before);
   };
   return <>
-    <div className="board-toolbar"><label className="search-field"><Search size={16} /><input aria-label="Szukaj zadań" placeholder="Szukaj zadań, tagów…" value={query} onChange={e => setQuery(e.target.value)} /></label><span className="filter-icon"><ListFilter size={16} /></span>
+    <div className="board-toolbar"><label className="search-field"><Search size={16} /><input aria-label="Szukaj zadań" placeholder="Szukaj zadań, ID, tagów…" value={query} onChange={e => setQuery(e.target.value)} /></label><span className="filter-icon"><ListFilter size={16} /></span>
       <select aria-label="Filtr osoby" value={person} onChange={e => setPerson(e.target.value)}><option value="">Wszystkie osoby</option><option value="unassigned">Nieprzypisane</option>{data.members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
       <select aria-label="Filtr priorytetu" value={priority} onChange={e => setPriority(e.target.value)}><option value="">Każdy priorytet</option>{Object.entries(PRIORITIES).map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select>
       <select aria-label="Filtr terminu" value={deadline} onChange={e => setDeadline(e.target.value)}><option value="">Każdy termin</option><option value="overdue">Po terminie</option><option value="today">Na dziś</option></select>

@@ -10,6 +10,32 @@ export const STAGE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#db2777', '#0284c
 export const emptyBoard = (): BoardData => ({ tasks: [], members: [], stages: DEFAULT_STAGES.map(s => ({ ...s })) });
 export const stageTitle = (stages: BoardStage[], id: string) => stages.find(s => s.id === id)?.title ?? id;
 
+export function getTaskDisplayId(task: Pick<Task, 'id'> & Partial<Pick<Task, 'githubIssueNumber'>>): string {
+  if (task.githubIssueNumber && !task.id) return `#${task.githubIssueNumber}`;
+  if (!task.id) return '';
+  const match = /^task-(\d+)$/i.exec(task.id);
+  if (match) return `TASK-${match[1]}`;
+  if (/^[a-zA-Z]+-\d+$/.test(task.id)) return task.id.toUpperCase();
+  if (task.githubIssueNumber) return `#${task.githubIssueNumber}`;
+  if (task.id.length > 8) {
+    const clean = task.id.replace(/-/g, '').slice(0, 6).toUpperCase();
+    return `#${clean}`;
+  }
+  return `#${task.id.toUpperCase()}`;
+}
+
+export function generateNextTaskId(tasks: Task[]): string {
+  let max = 0;
+  for (const t of tasks) {
+    const match = /^task-(\d+)$/i.exec(t.id);
+    if (match) {
+      const val = parseInt(match[1], 10);
+      if (val > max) max = val;
+    }
+  }
+  return `task-${max + 1}`;
+}
+
 export function assertDraftCurrent(data: BoardData, original: Task | null, id?: string): void {
   if (!id) return;
   const current = data.tasks.find(t => t.id === id);

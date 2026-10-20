@@ -1,11 +1,11 @@
 import { CalendarDays, CheckSquare, GripVertical, MessageSquare } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { BoardStage, Task, TeamMember } from '../types/kanban';
 import { evaluateDueDate } from '../utils/dateUtils';
 import { TaskImageGallery } from './TaskImageGallery';
-import { taskAssigneeIds } from '../utils/board';
+import { getTaskDisplayId, taskAssigneeIds } from '../utils/board';
 import { TaskAssigneePicker } from './TaskAssigneePicker';
 export const PRIORITIES = { urgent: 'Pilny', high: 'Wysoki', medium: 'Średni', low: 'Niski' };
 interface Props {
@@ -20,11 +20,42 @@ interface Props {
   overlay?: boolean;
 }
 function CardContent({ task, teamMembers, stages, onEdit, onMove, onAssign, onToggleSubtask, disabled, overlay, handle }: Props & { handle?: React.ReactNode }) {
+  const [copied, setCopied] = useState(false);
   const due = evaluateDueDate(task.dueDate, task.status === 'done');
   const completed = task.subtasks.filter(s => s.completed).length;
   const total = task.subtasks.length;
+  const displayId = getTaskDisplayId(task);
+
+  const handleCopyId = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!displayId || overlay || disabled) return;
+    void navigator.clipboard?.writeText(displayId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1400);
+  };
+
   return <>
-    <div className="card-top"><span className={'priority ' + task.priority}><span />{PRIORITIES[task.priority]}</span>
+    <div className="card-top">
+      <span className={'priority ' + task.priority}><span />{PRIORITIES[task.priority]}</span>
+      {displayId && (
+        <span
+          className={'task-id-badge' + (copied ? ' copied' : '')}
+          title={copied ? 'Skopiowano ID do schowka!' : `ID zadania: ${task.id} (kliknij, aby skopiować)`}
+          onClick={handleCopyId}
+          role="button"
+          tabIndex={overlay || disabled ? -1 : 0}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleCopyId(e as any);
+            }
+          }}
+          aria-label={'Identyfikator zadania: ' + displayId}
+        >
+          {copied ? 'Skopiowano!' : displayId}
+        </span>
+      )}
       <TaskAssigneePicker compact members={teamMembers} value={taskAssigneeIds(task)} taskTitle={task.title}
         disabled={disabled || overlay || !onAssign} onChange={ids => onAssign?.(task.id, ids)} />
       {handle}

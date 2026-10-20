@@ -98,6 +98,9 @@ h2 { font-size: 14px; font-weight: 700; }
 .priority.urgent { color: var(--danger); background: var(--danger-bg); }
 .priority.high { color: var(--warning); background: var(--warning-bg); }
 .priority.medium { color: var(--info); background: var(--info-bg); }
+.task-id-badge { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 9px; font-weight: 700; letter-spacing: 0.03em; color: var(--muted); background: var(--surface-subtle); border: 1px solid var(--soft-border); padding: 1px 5px; border-radius: 4px; white-space: nowrap; user-select: all; display: inline-flex; align-items: center; transition: all 0.15s ease; line-height: 1.4; cursor: pointer; }
+.task-id-badge:hover { color: var(--text); border-color: var(--border); background: var(--column); }
+.task-id-badge.copied { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
 .drag-handle { background: none; border: 0; color: var(--muted); cursor: grab; touch-action: none; display: flex; align-items: center; padding: 3px; border-radius: 4px; }
 .drag-handle:hover { color: var(--muted); background: var(--hover); }
 .card-open { border: none; background: none; text-align: left; width: 100%; display: block; }

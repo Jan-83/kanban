@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addStage, assertDraftCurrent, emptyBoard, moveStage, moveTask, assignTask, parseBoard, parseLegacyBoard, renameStage, setStageColor } from '../src/utils/board';
+import { addStage, assertDraftCurrent, emptyBoard, generateNextTaskId, getTaskDisplayId, moveStage, moveTask, assignTask, parseBoard, parseLegacyBoard, renameStage, setStageColor } from '../src/utils/board';
 import { INITIAL_TASKS, INITIAL_MEMBERS } from '../src/utils/storage';
 import { clearLegacyAuthentication } from '../src/utils/authStorage';
 import { generateGitHubIssuesMarkdown } from '../src/utils/githubExport';
@@ -167,5 +167,19 @@ test('invalid comment dates, duplicate ids and malformed entries cannot corrupt 
   for (const statusComments of [[{ ...comment, timestamp: 'invalid' }], [comment, comment], [null], [comment, null]]) {
     assert.throws(() => parseBoard({ ...emptyBoard(), tasks: [{ ...task('a'), statusComments }] }), /Nieprawidłowe dane zadań/);
   }
+});
+
+test('task ID display formatting and next task ID generation are predictable and unique', () => {
+  assert.equal(getTaskDisplayId({ id: 'task-1' }), 'TASK-1');
+  assert.equal(getTaskDisplayId({ id: 'task-42' }), 'TASK-42');
+  assert.equal(getTaskDisplayId({ id: 'TASK-99' }), 'TASK-99');
+  assert.equal(getTaskDisplayId({ id: 'feature-4' }), 'FEATURE-4');
+  assert.equal(getTaskDisplayId({ id: '', githubIssueNumber: 101 }), '#101');
+  assert.equal(getTaskDisplayId({ id: 'uuid-1234-5678' }), '#UUID12');
+  assert.equal(getTaskDisplayId({ id: 'custom' }), '#CUSTOM');
+
+  const tasks = [task('task-1'), task('task-3'), task('task-2')];
+  assert.equal(generateNextTaskId(tasks), 'task-4');
+  assert.equal(generateNextTaskId([]), 'task-1');
 });
 

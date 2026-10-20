@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Check, Cloud, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import type { ActiveTab, BoardData, BoardSnapshot, BoardUser, Task } from '../types/kanban';
-import { addStage, assertDraftCurrent, assignTask, moveStage, moveTask, parseBoard, readLegacyBoard, removeMember, renameStage, setStageColor } from '../utils/board';
+import { addStage, assertDraftCurrent, assignTask, generateNextTaskId, moveStage, moveTask, parseBoard, readLegacyBoard, removeMember, renameStage, setStageColor } from '../utils/board';
 import { AccessDeniedError, RevisionConflictError, loadBoard, saveBoard } from '../utils/supabase';
 import { evaluateDueDate } from '../utils/dateUtils';
 import { Navbar } from './Navbar';
@@ -89,8 +89,9 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
     const now = new Date().toISOString();
     assertDraftCurrent(data, editing, draft.id);
     const { newTaskId, ...task } = draft;
+    const finalId = draft.id ?? (newTaskId && !data.tasks.some(t => t.id === newTaskId) ? newTaskId : generateNextTaskId(data.tasks));
     return { ...data, tasks: draft.id ? data.tasks.map(t => t.id === draft.id ? { ...t, ...task, id: t.id, updatedAt: now } : t)
-      : [{ ...task, id: newTaskId ?? crypto.randomUUID(), createdAt: now, updatedAt: now }, ...data.tasks] };
+      : [{ ...task, id: finalId, createdAt: now, updatedAt: now }, ...data.tasks] };
   });
   const move = (id: string, stage: string, before?: string) => { void commit(data => moveTask(data, id, stage, before)); };
   const assign = (id: string, assigneeIds: string[]) => { void commit(data => assignTask(data, id, assigneeIds)); };
@@ -128,7 +129,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
         {tab === 'timeline' && <TimelineCalendarView data={data} onEdit={edit} busy={busy} />}
         {tab === 'team' && <TeamView data={data} busy={busy} onAdd={m => commit(d => ({ ...d, members: [...d.members, m] }))} onRemove={id => commit(d => removeMember(d, id))} onUpdate={m => commit(d => ({ ...d, members: d.members.map(x => x.id === m.id ? m : x) }))} />}
         {tab === 'github' && <GitHubModal data={data} busy={busy} canImport={user.role === 'admin'} onImport={importLegacy} />}
-        <TaskModal isOpen={modal} onClose={() => setModal(false)} onSave={saveTask} onDelete={id => commit(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }))} initialTask={editing} defaultStatus={defaultStage} teamMembers={data.members} stages={data.stages} busy={busy} error={message} currentUser={user} />
+        <TaskModal isOpen={modal} onClose={() => setModal(false)} onSave={saveTask} onDelete={id => commit(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }))} initialTask={editing} defaultStatus={defaultStage} defaultNewTaskId={data ? generateNextTaskId(data.tasks) : undefined} teamMembers={data.members} stages={data.stages} busy={busy} error={message} currentUser={user} />
       </>}
     </main>
   </div></TaskImageProvider>;

@@ -5,6 +5,8 @@ import { emptyBoard, parseBoard } from '../src/utils/board';
 import { RevisionConflictError } from '../src/utils/supabase';
 import type { BoardData, TaskImage } from '../src/types/kanban';
 import type { TaskImageRepository } from '../src/utils/taskImages';
+import type { StrategyRepository } from '../src/types/strategy';
+import { createStrategySeed, parseStrategy } from '../src/utils/strategy';
 import '../src/index.css';
 import { applyTheme, readTheme } from '../src/utils/theme';
 applyTheme(readTheme());
@@ -32,5 +34,12 @@ const imageRepository: TaskImageRepository = {
   },
   async urls(images) { return Object.fromEntries(images.map(image => [image.id, sessionStorage.getItem('kanban-media-preview-photo-' + image.path) ?? ''])); },
 };
-createRoot(document.getElementById('root')!).render(<Workspace user={{ id: 'demo', name: 'Jan', email: 'demo@example.invalid', role: 'admin' }} repository={repository} imageRepository={imageRepository} onLogout={() => location.assign('/')} onAccessLost={() => location.assign('/')} />);
+const strategyKey = 'kanban-strategy-preview';
+const readStrategy = () => { const raw = localStorage.getItem(strategyKey); return raw ? JSON.parse(raw) : { data: createStrategySeed(), revision: 0 }; };
+const strategyRepository: StrategyRepository = {
+  load: async () => structuredClone(readStrategy()),
+  save: async (data, revision) => { const current = readStrategy(); if (revision !== current.revision) throw new RevisionConflictError('Druga osoba zmieniła strategię.'); const next = { data: parseStrategy(data), revision: revision + 1 }; localStorage.setItem(strategyKey, JSON.stringify(next)); return next; },
+  subscribe: change => { const callback = (event: StorageEvent) => { if (event.key === strategyKey) change(); }; window.addEventListener('storage', callback); return () => window.removeEventListener('storage', callback); },
+};
+createRoot(document.getElementById('root')!).render(<Workspace user={{ id: 'demo', name: 'Jan', email: 'demo@example.invalid', role: 'admin' }} repository={repository} imageRepository={imageRepository} strategyRepository={strategyRepository} onLogout={() => location.assign('/')} onAccessLost={() => location.assign('/')} />);
 

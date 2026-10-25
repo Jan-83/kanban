@@ -84,4 +84,4 @@ export interface GitHubRepoConfig {
   webhookActive: boolean;
 }
 
-export type ActiveTab = 'board' | 'list' | 'timeline' | 'team' | 'github';
+export type ActiveTab = 'board' | 'list' | 'timeline' | 'team' | 'github' | 'strategy';

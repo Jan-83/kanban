@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Clock, ImagePlus, Maximize2, Plus, Trash2, X } from 'lucide-react';
 import type { BoardStage, BoardUser, StatusComment, Subtask, Task, TaskImage, TaskPriority, TeamMember } from '../types/kanban';
 import { formatDateTimeForInput } from '../utils/dateUtils';
@@ -31,6 +31,8 @@ interface Props {
   busy: boolean;
   error: string;
   currentUser?: BoardUser;
+  extraFields?: ReactNode;
+  strategyCard?: boolean;
 }
 
 function formatCommentDate(iso: string): string {
@@ -54,6 +56,8 @@ export function TaskModal({
   busy: boardBusy,
   error,
   currentUser,
+  extraFields,
+  strategyCard = false,
 }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [title, setTitle] = useState('');
@@ -249,9 +253,9 @@ export function TaskModal({
     >
       <div className="dialog-heading">
         <div>
-          <p className="eyebrow">ZADANIA ZESPOŁU</p>
+          <p className="eyebrow">{strategyCard ? 'TABLICA STRATEGICZNA' : 'ZADANIA ZESPOŁU'}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <h2 id="task-dialog-title">{initialTask ? 'Edytuj zadanie' : 'Nowe zadanie'}</h2>
+            <h2 id="task-dialog-title">{strategyCard ? initialTask ? 'Edytuj kartę' : 'Nowa karta' : initialTask ? 'Edytuj zadanie' : 'Nowe zadanie'}</h2>
             {initialTask && <span className="task-id-badge" title={'ID: ' + initialTask.id}>{getTaskDisplayId(initialTask)}</span>}
           </div>
         </div>
@@ -264,6 +268,7 @@ export function TaskModal({
         <fieldset disabled={busy} className="form-stack">
           {error && <p className="notice error" role="alert">{error}</p>}
           {localError && <p className="notice error" role="alert">{localError}</p>}
+          {extraFields}
           <label>
             Tytuł zadania
             <input
@@ -472,7 +477,7 @@ export function TaskModal({
                 type="button"
                 className="button danger"
                 onClick={async () => {
-                  if (confirm('Usunąć zadanie „' + initialTask.title + '”?') && await onDelete(initialTask.id)) onClose();
+                  if (confirm((strategyCard ? 'Usunąć kartę „' : 'Usunąć zadanie „') + initialTask.title + '”?' + (strategyCard ? ' Jej podkarty zostaną zachowane.' : '')) && await onDelete(initialTask.id)) onClose();
                 }}
               >
                 <Trash2 size={15} />Usuń

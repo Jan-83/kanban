@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Check, Cloud, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import type { ActiveTab, BoardData, BoardSnapshot, BoardUser, Task } from '../types/kanban';
 import { addStage, assertDraftCurrent, assignTask, generateNextTaskId, moveStage, moveTask, parseBoard, readLegacyBoard, removeMember, renameStage, setStageColor } from '../utils/board';
@@ -13,11 +13,13 @@ import { GitHubModal } from './GitHubModal';
 import { TaskModal, type TaskDraft } from './TaskModal';
 import { TaskImageProvider } from './TaskImageContext';
 import { taskImageRepository, type TaskImageRepository } from '../utils/taskImages';
+import type { StrategyRepository } from '../types/strategy';
+const StrategyBoard = lazy(() => import('./StrategyBoard').then(m => ({ default: m.StrategyBoard })));
 
 export interface BoardRepository { load: (signal?: AbortSignal) => Promise<BoardSnapshot>; save: (data: BoardData, revision: number) => Promise<BoardSnapshot>; }
 const remote: BoardRepository = { load: loadBoard, save: saveBoard };
-interface Props { user: BoardUser; onLogout: () => void; onAccessLost: () => void; repository?: BoardRepository; imageRepository?: TaskImageRepository; }
-export function Workspace({ user, onLogout, onAccessLost, repository = remote, imageRepository = taskImageRepository }: Props) {
+interface Props { user: BoardUser; onLogout: () => void; onAccessLost: () => void; repository?: BoardRepository; imageRepository?: TaskImageRepository; strategyRepository?: StrategyRepository; }
+export function Workspace({ user, onLogout, onAccessLost, repository = remote, imageRepository = taskImageRepository, strategyRepository }: Props) {
   const [snapshot, setSnapshot] = useState<BoardSnapshot | null>(null);
   const current = useRef<BoardSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
@@ -26,6 +28,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
   const generation = useRef(0);
   const [message, setMessage] = useState('');
   const [tab, setTab] = useState<ActiveTab>('board');
+  const [strategyBusy, setStrategyBusy] = useState(false);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [defaultStage, setDefaultStage] = useState('todo');
@@ -117,11 +120,11 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
   const data = snapshot?.data;
   const overdue = data?.tasks.filter(t => t.status !== 'done' && evaluateDueDate(t.dueDate).isOverdue).length ?? 0;
   const completed = data?.tasks.filter(t => t.status === 'done').length ?? 0;
-  const titles = { board: 'Tablica projektu', list: 'Wszystkie zadania', timeline: 'Terminy pod kontrolą', team: 'Ludzie i zadania', github: 'Eksport i kopie' };
+  const titles = { board: 'Tablica projektu', list: 'Wszystkie zadania', timeline: 'Terminy pod kontrolą', team: 'Ludzie i zadania', github: 'Eksport i kopie', strategy: 'Tablica strategiczna' };
   return <TaskImageProvider repository={imageRepository}><div className="workspace">
-    <Navbar activeTab={tab} onTab={setTab} user={user} onLogout={onLogout} onNew={() => newTask()} busy={busy || !data} />
+    <Navbar activeTab={tab} onTab={next => { if (!strategyBusy) setTab(next); }} user={user} onLogout={() => { if (!strategyBusy) onLogout(); }} onNew={() => newTask()} busy={busy || !data || strategyBusy} />
     <main className="workspace-main">
-      <div className="page-heading"><h1>{titles[tab]}</h1><div className="heading-details"><div className="project-stats"><span><b>{(data?.tasks.length ?? 0) - completed}</b> aktywnych</span><span><b>{completed}</b> zrobionych</span>{overdue > 0 && <span className="overdue"><b>{overdue}</b> po terminie</span>}</div><span className="sync-status" role="status" title={'Ostatnie sprawdzenie: ' + new Date(clock).toLocaleTimeString('pl')} >{busy ? <><LoaderCircle size={13} className="spin" />Zapisywanie</> : data ? <><Check size={13} />Zapisano</> : <><Cloud size={13} />Wczytywanie</>}</span><button className="icon-button" aria-label="Odśwież tablicę" disabled={busy} onClick={() => { setMessage(''); void refresh(); }}><RefreshCw size={16} /></button></div></div>
+      {tab !== 'strategy' && <div className="page-heading"><h1>{titles[tab]}</h1><div className="heading-details"><div className="project-stats"><span><b>{(data?.tasks.length ?? 0) - completed}</b> aktywnych</span><span><b>{completed}</b> zrobionych</span>{overdue > 0 && <span className="overdue"><b>{overdue}</b> po terminie</span>}</div><span className="sync-status" role="status" title={'Ostatnie sprawdzenie: ' + new Date(clock).toLocaleTimeString('pl')} >{busy ? <><LoaderCircle size={13} className="spin" />Zapisywanie</> : data ? <><Check size={13} />Zapisano</> : <><Cloud size={13} />Wczytywanie</>}</span><button className="icon-button" aria-label="Odśwież tablicę" disabled={busy} onClick={() => { setMessage(''); void refresh(); }}><RefreshCw size={16} /></button></div></div>}
       {message && <div className="notice error workspace-notice" role="alert"><span>{message}</span><button className="icon-button" aria-label="Zamknij komunikat" onClick={() => setMessage('')}><X size={16} /></button></div>}
       {!data ? <div className="empty-state">{message ? 'Tablica nie została wczytana. Użyj przycisku odświeżania.' : 'Wczytywanie wspólnej tablicy…'}</div> : <>
         {tab === 'board' && <KanbanBoard data={data} onEdit={edit} onNew={newTask} onMove={move} onAssign={assign} onToggleSubtask={toggleSubtask} disabled={busy} onAddStage={(name, color) => commit(d => addStage(d, name, color, crypto.randomUUID()))} onMoveStage={(id, target) => { void commit(d => moveStage(d, id, target)); }} onStageColor={(id, color) => commit(d => setStageColor(d, id, color))} onRenameStage={(id, name, expectedTitle) => commit(d => renameStage(d, id, name, expectedTitle))} />}
@@ -129,7 +132,8 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
         {tab === 'timeline' && <TimelineCalendarView data={data} onEdit={edit} busy={busy} />}
         {tab === 'team' && <TeamView data={data} busy={busy} onAdd={m => commit(d => ({ ...d, members: [...d.members, m] }))} onRemove={id => commit(d => removeMember(d, id))} onUpdate={m => commit(d => ({ ...d, members: d.members.map(x => x.id === m.id ? m : x) }))} />}
         {tab === 'github' && <GitHubModal data={data} busy={busy} canImport={user.role === 'admin'} onImport={importLegacy} />}
-        <TaskModal isOpen={modal} onClose={() => setModal(false)} onSave={saveTask} onDelete={id => commit(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }))} initialTask={editing} defaultStatus={defaultStage} defaultNewTaskId={data ? generateNextTaskId(data.tasks) : undefined} teamMembers={data.members} stages={data.stages} busy={busy} error={message} currentUser={user} />
+        {tab === 'strategy' && <Suspense fallback={<div className="empty-state">Wczytywanie tablicy strategicznej…</div>}><StrategyBoard user={user} members={data.members} onAccessLost={onAccessLost} repository={strategyRepository} onBusy={setStrategyBusy} /></Suspense>}
+        {modal && <TaskModal isOpen onClose={() => setModal(false)} onSave={saveTask} onDelete={id => commit(d => ({ ...d, tasks: d.tasks.filter(t => t.id !== id) }))} initialTask={editing} defaultStatus={defaultStage} defaultNewTaskId={data ? generateNextTaskId(data.tasks) : undefined} teamMembers={data.members} stages={data.stages} busy={busy} error={message} currentUser={user} />}
       </>}
     </main>
   </div></TaskImageProvider>;

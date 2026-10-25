@@ -38,6 +38,17 @@ Default Supabase email sending has restrictions. If invitations or password rese
 ## Existing data
 Old tasks stay in their browser storage until explicitly imported. On the same origin/browser, the first admin can use Eksport → Importuj lokalne zadania while the cloud board is empty. Only tasks, roster and stages are accepted; old credentials and permissions are not imported. A fork/preview uses a different origin, so it cannot read local data from the original GitHub Pages address.
 
+## Shared strategic board
+The **TABLICA STRATEGICZNA** button opens one shared canvas for the existing board members. Its first opening creates six editable root cards (Mieszkanie, Dom, Willa, Małe biuro, Mały budynek biurowy, Większe biuro), their planning cards, and a nested lighting example. There are no enclosing segment frames.
+
+Click a card to use the existing task editor: rich text, photos, several responsible people, priority, tags, checklist, timestamped status comments and closing status. Add children with **+**, choose a parent in the editor, or drag a connector from the bottom of a parent to the left of a child. Descendants cannot become their own ancestors. Deleting a card preserves its children and attaches them to its former parent.
+
+Drag a card by its top bar, or Shift-drag a selection on the canvas to move a group. **Przesuwaj kartę razem z podkartami** includes the complete branch. Drag the background to pan, use the wheel/pinch to zoom, **Cała tablica** to fit, and the fullscreen button for more room. Each card can have a color; the editor can apply that color to all its descendants. Positions, links and content are shared; zoom and collapsed branches are personal view state. **Ułóż gałęzie** changes shared positions after confirmation. The download icon exports strategy JSON, separate from the original Kanban export.
+
+Apply `20261025204207_kanban_strategy_board.sql` before deploying. Strategy lives in `kanban_strategy_boards`, separate from the existing tasks, so older clients cannot overwrite it. Membership RLS protects reads/writes, and compare-and-swap revisions protect concurrent changes. Realtime notifications and a 10-second polling fallback refresh other windows. Operations on different cards can retry against the latest revision; an edit to an already changed card is rejected while keeping the local draft open. Only confirmed writes show as saved. Limits: 1,000 cards and 2 MB of strategy JSON; photos remain in private Storage.
+
+Before publication, back up source/Git history, the original board JSON, membership rows, and attached photo files. A frontend rollback to the preceding authenticated version leaves the separate strategy table intact; do not drop that table or restore old task JSON as part of a frontend rollback. The development preview uses synthetic tasks and a localStorage strategy repository for two-window checks and never writes to the production database.
+
 ## Collaboration
 Changes use revision compare-and-swap. If another person saves first, the stale write is rejected, the current board is loaded, and the user can retry; a task form remains open with its draft. The board refreshes every 15 seconds and on window focus. A failed write rolls back locally and shows an error; unsaved changes are not presented as a successful save.
 

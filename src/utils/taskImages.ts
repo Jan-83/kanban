@@ -1,14 +1,22 @@
 import type { TaskImage } from '../types/kanban';
 import { boardId, supabase } from './supabase';
-import { validateImageContent } from './taskImageValidation';
+import { copiedTaskImage, validateImageContent } from './taskImageValidation';
 
 export const TASK_IMAGE_BUCKET = 'kanban-task-images';
 export interface TaskImageRepository {
   upload: (taskId: string, file: File) => Promise<TaskImage>;
+  copy: (image: TaskImage, taskId: string) => Promise<TaskImage>;
   urls: (images: TaskImage[]) => Promise<Record<string, string>>;
 }
 
 export const taskImageRepository: TaskImageRepository = {
+  async copy(image, taskId) {
+    if (!supabase || !image.path.startsWith(boardId + '/')) throw new Error('Brak dostępu do zdjęć tego projektu.');
+    const copied = copiedTaskImage(image, taskId);
+    const { error } = await supabase.storage.from(TASK_IMAGE_BUCKET).copy(image.path, copied.path);
+    if (error) throw new Error('Nie udało się skopiować zdjęcia „' + image.name + '”. Kopia karty nie została zapisana. Spróbuj ponownie.');
+    return copied;
+  },
   async upload(taskId, file) {
     if (!supabase) throw new Error('Brak dostępu do magazynu zdjęć.');
     if (!/^[a-zA-Z0-9_-]{1,120}$/.test(taskId)) throw new Error('Nieprawidłowe zadanie.');

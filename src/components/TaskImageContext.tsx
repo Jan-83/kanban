@@ -10,6 +10,7 @@ export function TaskImageProvider({ repository, children }: { repository: TaskIm
     const cache = new Map<string, { url: string; expires: number }>();
     return {
       upload: repository.upload,
+      copy: repository.copy,
       async urls(images) {
         const missing = images.filter(image => !cache.has(image.path) || cache.get(image.path)!.expires < Date.now());
         if (missing.length) {

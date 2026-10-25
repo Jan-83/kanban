@@ -9,6 +9,7 @@ import type { StrategyRepository } from '../src/types/strategy';
 import { createStrategySeed, parseStrategy } from '../src/utils/strategy';
 import '../src/index.css';
 import { applyTheme, readTheme } from '../src/utils/theme';
+import { copiedTaskImage } from '../src/utils/taskImageValidation';
 applyTheme(readTheme());
 const data: BoardData = {
   ...emptyBoard(),
@@ -24,15 +25,22 @@ const repository: BoardRepository = {
   save: async (data, revision) => { if (revision !== snapshot.revision) throw new RevisionConflictError('Odśwież tablicę.'); snapshot = { data: structuredClone(data), revision: revision + 1 }; sessionStorage.setItem('kanban-media-preview-board', JSON.stringify(snapshot)); return structuredClone(snapshot); },
 };
 const imageRepository: TaskImageRepository = {
+  async copy(image, taskId) {
+    const copied = copiedTaskImage(image, taskId);
+    const content = localStorage.getItem('kanban-media-preview-photo-' + image.path) ?? sessionStorage.getItem('kanban-media-preview-photo-' + image.path);
+    if (!content) throw new Error('Brak zdjęcia w podglądzie.');
+    localStorage.setItem('kanban-media-preview-photo-' + copied.path, content);
+    return copied;
+  },
   async upload(taskId, file) {
     const id = crypto.randomUUID();
     const mimeType = file.type as TaskImage['mimeType'];
     const path = '10000000-0000-4000-a000-000000000001/' + taskId + '/' + id + '.' + ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[mimeType]);
     const dataUrl = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = reject; reader.readAsDataURL(file); });
-    sessionStorage.setItem('kanban-media-preview-photo-' + path, dataUrl);
+    localStorage.setItem('kanban-media-preview-photo-' + path, dataUrl);
     return { id, name: file.name, path, mimeType, size: file.size, uploadedAt: new Date().toISOString() };
   },
-  async urls(images) { return Object.fromEntries(images.map(image => [image.id, sessionStorage.getItem('kanban-media-preview-photo-' + image.path) ?? ''])); },
+  async urls(images) { return Object.fromEntries(images.map(image => [image.id, localStorage.getItem('kanban-media-preview-photo-' + image.path) ?? sessionStorage.getItem('kanban-media-preview-photo-' + image.path) ?? ''])); },
 };
 const strategyKey = 'kanban-strategy-preview';
 const readStrategy = () => { const raw = localStorage.getItem(strategyKey); return raw ? JSON.parse(raw) : { data: createStrategySeed(), revision: 0 }; };

@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Background, Controls, Handle, MiniMap, Position, ReactFlow, applyNodeChanges, type Connection, type Node, type NodeProps, type ReactFlowInstance } from '@xyflow/react';
-import { Check, CheckSquare, ChevronDown, ChevronRight, Copy, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, X } from 'lucide-react';
+import { Check, CheckSquare, ChevronDown, ChevronRight, CircleHelp, Copy, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, Workflow, X } from 'lucide-react';
 import type { BoardUser, Task, TeamMember } from '../types/kanban';
 import type { StrategyCard, StrategyData, StrategyRepository } from '../types/strategy';
 import { canParent, cardPath, deleteStrategyCard, descendantIds, hiddenStrategyIds, layoutStrategy, moveStrategyCards, setStrategyConnection, setStrategySubtaskCompleted, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
@@ -13,6 +13,23 @@ import { StrategyCopyDialog } from './StrategyCopyDialog';
 import { appendStrategyCopy, type StrategyCopyPlan } from '../utils/strategyCopy';
 import '@xyflow/react/dist/style.css';
 import '../strategy.css';
+
+function StrategyHelp({ onClose }: { onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { dialog.current?.showModal(); }, []);
+  return <dialog ref={dialog} className="task-dialog strategy-help-dialog" aria-labelledby="strategy-help-title" onCancel={onClose}>
+    <div className="dialog-heading"><h2 id="strategy-help-title">Jak korzystać z tablicy</h2><button className="icon-button" onClick={onClose} aria-label="Zamknij pomoc"><X size={20} /></button></div>
+    <ul>
+      <li><strong>Edycja:</strong> kliknij tytuł karty. Ikona dwóch kartek kopiuje kartę lub całą gałąź.</li>
+      <li><strong>Przesuwanie:</strong> przeciągnij górny pasek karty lub tło planszy. Shift + przeciągnięcie zaznacza grupę.</li>
+      <li><strong>Z podkartami:</strong> zaznacz tę opcję, aby przesuwać kartę razem z całą jej gałęzią.</li>
+      <li><strong>Łączenie:</strong> przeciągnij dolny punkt karty do lewego punktu innej. Jedna karta może mieć wielu rodziców. Aby odłączyć, zaznacz linię i wybierz „Usuń połączenie”.</li>
+      <li><strong>Widok:</strong> kółko myszy przybliża, „Cała tablica” pokazuje wszystkie karty. Na wąskim ekranie przewiń pasek narzędzi w bok.</li>
+    </ul>
+    <p>Treść i pozycje zapisują się wspólnie. Powiększenie i zwinięte gałęzie są Twoim widokiem.</p>
+    <div className="dialog-actions"><span className="spacer" /><button className="button primary" onClick={onClose}>Rozumiem</button></div>
+  </dialog>;
+}
 
 type CardNode = Node<{
   card: StrategyCard; members: TeamMember[]; count: number; collapsed: boolean; busy: boolean;
@@ -54,6 +71,7 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const [moveBranch, setMoveBranch] = useState(true), [full, setFull] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [copying, setCopying] = useState<string | null>(null);
+  const [help, setHelp] = useState(false);
   const [parentIds, setParentIds] = useState<string[]>([]), [parentSearch, setParentSearch] = useState(''), [colorBranch, setColorBranch] = useState(false);
   const [selected, setSelected] = useState<string | null>(null), [zoom, setZoom] = useState(85);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
@@ -61,7 +79,7 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const canvas = useRef<HTMLDivElement>(null);
 
   useEffect(() => { onBusy?.(busy || !!editing || !!copying); }, [busy, editing, copying, onBusy]);
-  useEffect(() => { if (!full) return; const handle = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editing && !copying) setFull(false); }; window.addEventListener('keydown', handle); return () => window.removeEventListener('keydown', handle); }, [full, editing, copying]);
+  useEffect(() => { if (!full) return; const handle = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editing && !copying && !help) setFull(false); }; window.addEventListener('keydown', handle); return () => window.removeEventListener('keydown', handle); }, [full, editing, copying, help]);
   const openCopy = (id: string) => { setError(''); setCopying(id); };
   const copyCards = async (plan: StrategyCopyPlan) => {
     const ok = await commit(latest => appendStrategyCopy(latest, plan));
@@ -181,9 +199,28 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const parentOptions = editing ? data.cards.filter(c => c.task.id !== editing.id && canParent(data, editing.id, c.task.id)).map(c => ({ id: c.task.id, title: c.task.title, path: cardPath(data, c.task.id) })).filter(c => c.path.toLocaleLowerCase('pl').includes(parentSearch.toLocaleLowerCase('pl'))) : [];
   const busyOrLoading = busy || !snapshot;
   return <section className={'strategy-board' + (full ? ' strategy-fullscreen' : '')} aria-label="Wspólna tablica strategiczna">
-    <header className="strategy-heading"><div><p className="eyebrow">INTELISPACES / KIERUNKI ROZWOJU</p><h1>Pomysły, które łączą się w plan.</h1><p>Kliknij kartę, aby edytować. Przeciągnij kartę lub tło. Kółko myszy przybliża, Shift zaznacza grupę.</p></div><div className="strategy-sync" role="status">{busy ? <><LoaderCircle size={15} className="spin" />Zapisywanie…</> : snapshot ? <><Check size={15} />Zapisano wspólnie · wersja {snapshot.revision}</> : 'Wczytywanie…'}{checkedAt && <small>Sprawdzono {new Date(checkedAt).toLocaleTimeString('pl-PL')}</small>}</div></header>
-    <div className="strategy-toolbar"><button className="button primary" onClick={() => openEditor()} disabled={busyOrLoading}><Plus size={16} />Nowa karta</button><button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openCopy(selectedCard.task.id); }}><Copy size={15} />Kopiuj kartę</button><button className="button" disabled={busyOrLoading} onClick={() => { if (confirm('Automatycznie ułożyć wszystkie gałęzie? Zmieni to ich zapisane pozycje dla obu osób.')) void commit(latest => layoutStrategy(latest)).then(ok => { if (ok) setTimeout(() => { void instance?.fitView({ padding: .12 }); }, 80); }); }}><Network size={16} />Ułóż gałęzie</button><button className="button" onClick={() => { void instance?.fitView({ padding: .12, duration: 250 }); }}><Scan size={16} />Cała tablica</button><button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openEditor(selectedCard.task.id); }}><Network size={15} />Połączenia karty</button><button className="button" disabled={busyOrLoading || !connectionToRemove} onClick={() => { if (connectionToRemove) void commit(latest => setStrategyConnection(latest, connectionToRemove.target, connectionToRemove.source, false)).then(ok => { if (ok) setSelectedEdge(null); }); }}><Unplug size={15} />Usuń połączenie</button><button className="icon-button" onClick={() => { setError(''); void refresh(); }} disabled={busyOrLoading} aria-label="Odśwież strategię"><RefreshCw size={17} /></button><button className="icon-button" onClick={exportBoard} disabled={!snapshot || busy} aria-label="Pobierz kopię tablicy strategicznej"><Download size={17} /></button><button className="icon-button" onClick={() => setFull(!full)} aria-label={full ? 'Zamknij pełny ekran' : 'Pełny ekran tablicy'}>{full ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</button><span className="strategy-zoom">{zoom}%</span></div>
-    <div className="strategy-options"><label><input type="checkbox" checked={moveBranch} onChange={e => setMoveBranch(e.target.checked)} />Przesuwaj kartę razem z podkartami</label><span>Jedna karta może mieć wiele połączeń. Połącz dolny punkt z lewym. Aby odłączyć, kliknij linię i „Usuń połączenie”.</span></div>
+    <header className="strategy-topbar">
+      <h1 className="strategy-title" title="Tablica strategiczna"><Workflow size={18} /><span>Tablica strategiczna</span></h1>
+      <div className="strategy-toolbar" role="group" aria-label="Narzędzia tablicy strategicznej" tabIndex={0}>
+        <button className="button primary" onClick={() => openEditor()} disabled={busyOrLoading}><Plus size={16} />Nowa karta</button>
+        <button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openCopy(selectedCard.task.id); }}><Copy size={15} />Kopiuj kartę</button>
+        <button className="icon-button" title="Ułóż gałęzie" aria-label="Ułóż gałęzie" disabled={busyOrLoading} onClick={() => { if (confirm('Automatycznie ułożyć wszystkie gałęzie? Zmieni to ich zapisane pozycje dla obu osób.')) void commit(latest => layoutStrategy(latest)).then(ok => { if (ok) setTimeout(() => { void instance?.fitView({ padding: .12 }); }, 80); }); }}><Network size={16} /></button>
+        <button className="button" onClick={() => { void instance?.fitView({ padding: .12, duration: 250 }); }}><Scan size={16} />Cała tablica</button>
+        <button className="icon-button" title="Połączenia karty" aria-label="Połączenia karty" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openEditor(selectedCard.task.id); }}><Workflow size={16} /></button>
+        <button className="icon-button" title="Usuń połączenie" aria-label="Usuń połączenie" disabled={busyOrLoading || !connectionToRemove} onClick={() => { if (connectionToRemove) void commit(latest => setStrategyConnection(latest, connectionToRemove.target, connectionToRemove.source, false)).then(ok => { if (ok) setSelectedEdge(null); }); }}><Unplug size={16} /></button>
+        <span className="strategy-tool-divider" aria-hidden="true" />
+        <label className="strategy-move-option" title="Przesuwaj kartę razem z podkartami"><input type="checkbox" aria-label="Przesuwaj kartę razem z podkartami" checked={moveBranch} onChange={e => setMoveBranch(e.target.checked)} />Z podkartami</label>
+        <span className="strategy-tool-divider" aria-hidden="true" />
+        <button className="icon-button" onClick={() => { setError(''); void refresh(); }} disabled={busyOrLoading} title="Odśwież strategię" aria-label="Odśwież strategię"><RefreshCw size={16} /></button>
+        <button className="icon-button" onClick={exportBoard} disabled={!snapshot || busy} title="Pobierz kopię tablicy strategicznej" aria-label="Pobierz kopię tablicy strategicznej"><Download size={16} /></button>
+        <button className="icon-button" onClick={() => setFull(!full)} title={full ? 'Zamknij pełny ekran' : 'Pełny ekran tablicy'} aria-label={full ? 'Zamknij pełny ekran' : 'Pełny ekran tablicy'}>{full ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
+        <button className="icon-button" title="Jak korzystać z tablicy" aria-label="Jak korzystać z tablicy" onClick={() => setHelp(true)}><CircleHelp size={17} /></button>
+        <span className="strategy-zoom" aria-label={'Powiększenie ' + zoom + '%'}>{zoom}%</span>
+      </div>
+      <div className="strategy-sync" role="status" aria-label={busy ? 'Zapisywanie…' : snapshot ? 'Zapisano wspólnie · wersja ' + snapshot.revision : 'Wczytywanie…'} title={(snapshot ? 'Wersja ' + snapshot.revision + '. ' : '') + (checkedAt ? 'Sprawdzono ' + new Date(checkedAt).toLocaleTimeString('pl-PL') : 'Trwa wczytywanie')}>
+        {busy || !snapshot ? <LoaderCircle size={14} className="spin" /> : <Check size={14} />}<span className="strategy-sync-text">{busy ? 'Zapisywanie…' : snapshot ? 'Zapisano · v.' + snapshot.revision : 'Wczytywanie…'}</span>
+      </div>
+    </header>
     {error && <div className="notice error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Zamknij komunikat strategii" onClick={() => setError('')}><X size={16} /></button></div>}
     <div className="strategy-canvas" ref={canvas} onKeyDownCapture={moveWithKeyboard}>
       {snapshot ? <ReactFlow<CardNode> nodes={flowNodes} edges={edges} nodeTypes={nodeTypes} onInit={setInstance} onNodesChange={changes => setFlowNodes(previous => applyNodeChanges(changes, previous))} onNodeDragStart={(_, n, group) => startDrag(n, group)} onNodeDrag={(_, n) => drag(n)} onNodeDragStop={(_, n) => stopDrag(n)} onSelectionDragStart={(_, group) => { if (group[0]) startDrag(group[0], group); }} onSelectionDrag={(_, group) => { if (group[0]) drag(group[0]); }} onSelectionDragStop={(_, group) => { if (group[0]) stopDrag(group[0]); }} onConnect={connect} onEdgeClick={(_, edge) => setSelectedEdge(edge.id)} onNodeClick={() => setSelectedEdge(null)} onPaneClick={() => setSelectedEdge(null)} isValidConnection={c => !!c.source && !!c.target && canParent(data, c.target, c.source) && !data.cards.find(card => card.task.id === c.target)?.parentIds.includes(c.source)} onSelectionChange={({ nodes }) => setSelected(nodes[0]?.id ?? null)} onMoveEnd={(_, viewport) => { setZoom(Math.round(viewport.zoom * 100)); try { sessionStorage.setItem('kanban-strategy-viewport', JSON.stringify(viewport)); } catch {} }} nodesDraggable={!busy} nodesConnectable={!busy} deleteKeyCode={null} multiSelectionKeyCode={['Meta', 'Control']} selectionKeyCode="Shift" minZoom={.1} maxZoom={2} panOnDrag={[0, 1]} zoomOnScroll zoomOnPinch preventScrolling colorMode="system" ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': 'Przybliż', 'controls.zoomOut.ariaLabel': 'Oddal', 'controls.fitView.ariaLabel': 'Pokaż całą tablicę', 'minimap.ariaLabel': 'Mapa tablicy strategicznej' }}>
@@ -191,6 +228,7 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
       </ReactFlow> : <div className="empty-state">{error ? 'Nie wczytano strategii. Użyj przycisku odświeżania.' : 'Wczytywanie wspólnej tablicy…'}</div>}
     </div>
     <footer className="strategy-footer"><span>{data.cards.filter(c => !c.parentIds.length).length} głównych kart · {data.cards.length} kart łącznie</span><span>Zmiany treści i pozycji są wspólne. Powiększenie i zwinięte gałęzie są Twoim widokiem.</span></footer>
+    {help && <StrategyHelp onClose={() => setHelp(false)} />}
     {copying && <StrategyCopyDialog data={data} sourceId={copying} error={error} onCopy={copyCards} onClose={() => setCopying(null)} />}
     {editing && <TaskModal isOpen onClose={() => setEditing(null)} onSave={save} onDelete={async () => !!editing.original && commit(latest => deleteStrategyCard(latest, editing.original!))} initialTask={editing.original?.task ?? null} defaultStatus="discuss" defaultNewTaskId={editing.id} teamMembers={members} stages={STRATEGY_STAGES} busy={busy} error={error} currentUser={user} strategyCard extraFields={<div className="strategy-editor-extra">
       <fieldset className="strategy-parent-picker" disabled={busy}>

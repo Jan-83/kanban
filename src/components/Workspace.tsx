@@ -121,7 +121,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
   const overdue = data?.tasks.filter(t => t.status !== 'done' && evaluateDueDate(t.dueDate).isOverdue).length ?? 0;
   const completed = data?.tasks.filter(t => t.status === 'done').length ?? 0;
   const titles = { board: 'Tablica projektu', list: 'Wszystkie zadania', timeline: 'Terminy pod kontrolą', team: 'Ludzie i zadania', github: 'Eksport i kopie', strategy: 'Tablica strategiczna' };
-  return <TaskImageProvider repository={imageRepository}><div className="workspace">
+  return <TaskImageProvider repository={imageRepository}><div className={'workspace' + (tab === 'strategy' ? ' strategy-workspace' : '')}>
     <Navbar activeTab={tab} onTab={next => { if (!strategyBusy) setTab(next); }} user={user} onLogout={() => { if (!strategyBusy) onLogout(); }} onNew={() => newTask()} busy={busy || !data || strategyBusy} />
     <main className="workspace-main">
       {tab !== 'strategy' && <div className="page-heading"><h1>{titles[tab]}</h1><div className="heading-details"><div className="project-stats"><span><b>{(data?.tasks.length ?? 0) - completed}</b> aktywnych</span><span><b>{completed}</b> zrobionych</span>{overdue > 0 && <span className="overdue"><b>{overdue}</b> po terminie</span>}</div><span className="sync-status" role="status" title={'Ostatnie sprawdzenie: ' + new Date(clock).toLocaleTimeString('pl')} >{busy ? <><LoaderCircle size={13} className="spin" />Zapisywanie</> : data ? <><Check size={13} />Zapisano</> : <><Cloud size={13} />Wczytywanie</>}</span><button className="icon-button" aria-label="Odśwież tablicę" disabled={busy} onClick={() => { setMessage(''); void refresh(); }}><RefreshCw size={16} /></button></div></div>}

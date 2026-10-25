@@ -10,7 +10,7 @@ export function Navbar({ activeTab, onTab, user, onLogout, onNew, busy }: Props)
       <nav className="tabs" aria-label="Widoki projektu">{tabs.map(([id, Icon, label]) => <button key={id} className={activeTab === id ? 'tab active' : 'tab'} aria-current={activeTab === id ? 'page' : undefined} onClick={() => onTab(id)}><Icon size={15} />{label}</button>)}</nav>
       <div className="header-actions"><ThemeSwitch /><span className="user-name">{user.name}</span><button className="icon-button" onClick={onLogout} aria-label="Wyloguj się" title={'Wyloguj: ' + user.email}><LogOut size={16} /></button><button className="button primary" onClick={onNew} disabled={busy}><Plus size={15} />Nowe zadanie</button></div>
     </div>
-    <div className="strategy-launch-row"><button className={'strategy-launch' + (activeTab === 'strategy' ? ' active' : '')} aria-current={activeTab === 'strategy' ? 'page' : undefined} onClick={() => onTab('strategy')}><Workflow size={21} />TABLICA STRATEGICZNA</button><span>Wspólna przestrzeń na pomysły, potrzeby i plan działania</span></div>
+    {activeTab !== 'strategy' && <div className="strategy-launch-row"><button className="strategy-launch" onClick={() => onTab('strategy')}><Workflow size={21} />TABLICA STRATEGICZNA</button><span>Wspólna przestrzeń na pomysły, potrzeby i plan działania</span></div>}
   </header>;
 }
 

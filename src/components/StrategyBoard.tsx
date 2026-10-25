@@ -3,7 +3,7 @@ import { Background, BaseEdge, Controls, Handle, MiniMap, Position, ReactFlow, a
 import { Check, CheckSquare, ChevronDown, ChevronRight, CircleHelp, Copy, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, Workflow, X } from 'lucide-react';
 import type { BoardUser, Task, TeamMember } from '../types/kanban';
 import type { StrategyCard, StrategyData, StrategyRepository } from '../types/strategy';
-import { canParent, cardPath, deleteStrategyCard, descendantIds, hiddenStrategyIds, layoutStrategy, moveStrategyCards, setStrategyConnection, setStrategySubtaskCompleted, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
+import { canParent, cardPath, deleteStrategyCard, descendantIds, hiddenStrategyIds, moveStrategyCards, setStrategyConnection, setStrategySubtaskCompleted, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
 import { strategyRepository } from '../utils/strategyRepository';
 import { TaskModal, type TaskDraft } from './TaskModal';
 import { TaskImageGallery } from './TaskImageGallery';
@@ -221,7 +221,6 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
       <div className="strategy-toolbar" role="group" aria-label="Narzędzia tablicy strategicznej" tabIndex={0}>
         <button className="button primary" onClick={() => openEditor()} disabled={busyOrLoading}><Plus size={16} />Nowa karta</button>
         <button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openCopy(selectedCard.task.id); }}><Copy size={15} />Kopiuj kartę</button>
-        <button className="icon-button" title="Ułóż gałęzie" aria-label="Ułóż gałęzie" disabled={busyOrLoading} onClick={() => { if (confirm('Automatycznie ułożyć wszystkie gałęzie? Zmieni to ich zapisane pozycje dla obu osób.')) void commit(latest => layoutStrategy(latest)).then(ok => { if (ok) setTimeout(() => { void instance?.fitView({ padding: .12 }); }, 80); }); }}><Network size={16} /></button>
         <button className="button" onClick={() => { void instance?.fitView({ padding: .12, duration: 250 }); }}><Scan size={16} />Cała tablica</button>
         <button className="icon-button" title="Połączenia karty" aria-label="Połączenia karty" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openEditor(selectedCard.task.id); }}><Workflow size={16} /></button>
         <button className="icon-button" title="Usuń połączenie" aria-label="Usuń połączenie" disabled={busyOrLoading || !connectionToRemove} onClick={() => { if (connectionToRemove) void commit(latest => setStrategyConnection(latest, connectionToRemove.target, connectionToRemove.source, false)).then(ok => { if (ok) setSelectedEdge(null); }); }}><Unplug size={16} /></button>

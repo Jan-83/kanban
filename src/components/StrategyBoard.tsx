@@ -3,7 +3,7 @@ import { Background, Controls, Handle, MiniMap, Position, ReactFlow, applyNodeCh
 import { Check, CheckSquare, ChevronDown, ChevronRight, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, X } from 'lucide-react';
 import type { BoardUser, Task, TeamMember } from '../types/kanban';
 import type { StrategyCard, StrategyData, StrategyRepository } from '../types/strategy';
-import { canParent, cardPath, deleteStrategyCard, descendantIds, layoutStrategy, moveStrategyCards, reparentStrategyCard, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
+import { canParent, cardPath, deleteStrategyCard, descendantIds, layoutStrategy, moveStrategyCards, reparentStrategyCard, setStrategySubtaskCompleted, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
 import { strategyRepository } from '../utils/strategyRepository';
 import { TaskModal, type TaskDraft } from './TaskModal';
 import { TaskImageGallery } from './TaskImageGallery';
@@ -14,7 +14,7 @@ import '../strategy.css';
 
 type CardNode = Node<{
   card: StrategyCard; members: TeamMember[]; count: number; collapsed: boolean; busy: boolean;
-  onEdit: () => void; onAdd: () => void; onFold: () => void;
+  onEdit: () => void; onAdd: () => void; onFold: () => void; onSubtaskChange: (id: string, completed: boolean) => void;
 }, 'strategy'>;
 
 const StrategyNode = memo(function StrategyNode({ data, selected }: NodeProps<CardNode>) {
@@ -26,6 +26,12 @@ const StrategyNode = memo(function StrategyNode({ data, selected }: NodeProps<Ca
     <button className="strategy-card-open nodrag" onClick={data.onEdit} disabled={busy} aria-label={'Edytuj kartę ' + task.title}><strong title={task.title}>{task.title}</strong><span>{task.description || 'Dodaj opis…'}</span></button>
     {!!task.images?.length && <div className="nodrag nopan strategy-card-images"><TaskImageGallery images={task.images} compact /></div>}
     <div className="strategy-card-tags">{task.priority !== 'medium' && <span className={'priority priority-' + task.priority}>{PRIORITIES[task.priority]}</span>}{task.tags.slice(0, 2).map(tag => <span key={tag} title={tag}>{tag}</span>)}</div>
+    {task.subtasks.length > 0 && <div className="card-subtasks-preview strategy-card-checklist nodrag nopan nowheel" aria-label={'Lista kroków: ' + task.title} onClick={event => event.stopPropagation()}>
+      {task.subtasks.map(step => <label key={step.id} className={'card-subtask-item' + (step.completed ? ' is-completed' : '')}>
+        <input type="checkbox" checked={step.completed} disabled={busy} aria-label={step.title} onChange={event => data.onSubtaskChange(step.id, event.target.checked)} />
+        <span className="card-subtask-text" title={step.title}>{step.title}</span>
+      </label>)}
+    </div>}
     <div className="strategy-card-bottom">{count > 0 && <button className="strategy-fold nodrag" aria-expanded={!collapsed} onClick={data.onFold}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{count} podkart</button>}{task.subtasks.length > 0 && <span title="Wykonane kroki"><CheckSquare size={13} />{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>}{!!task.statusComments?.length && <span title="Komentarze o statusie"><MessageSquare size={13} />{task.statusComments.length}</span>}<span className="strategy-people">{assigned.map(person => <span className="strategy-person" key={person.id} title={person.name} style={{ backgroundColor: person.color }}>{person.name.split(' ').map(n => n[0]).slice(0, 2).join('')}</span>)}</span></div>
     <Handle type="source" position={Position.Bottom} aria-label={'Połącz z podkartą: ' + task.title} />
   </article>;
@@ -61,11 +67,14 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
     setParentId(original?.parentId ?? parent); setColorBranch(false); setError('');
   };
   const fold = (id: string) => setCollapsed(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  const setSubtask = (cardId: string, subtaskId: string, completed: boolean) => {
+    void commit(latest => setStrategySubtaskCompleted(latest, cardId, subtaskId, completed));
+  };
   const hidden = useMemo(() => { const ids = new Set<string>(); for (const id of collapsed) for (const child of descendantIds(data, id)) ids.add(child); return ids; }, [data, collapsed]);
 
   useEffect(() => {
     if (dragging.current) return;
-    setFlowNodes(previous => data.cards.map(card => ({ id: card.task.id, type: 'strategy', position: card.position, hidden: hidden.has(card.task.id), selected: previous.some(n => n.id === card.task.id && n.selected), data: { card, members, count: descendantIds(data, card.task.id).size, collapsed: collapsed.has(card.task.id), busy, onEdit: () => openEditor(card.task.id), onAdd: () => openEditor(undefined, card.task.id), onFold: () => fold(card.task.id) } })));
+    setFlowNodes(previous => data.cards.map(card => ({ id: card.task.id, type: 'strategy', position: card.position, hidden: hidden.has(card.task.id), selected: previous.some(n => n.id === card.task.id && n.selected), data: { card, members, count: descendantIds(data, card.task.id).size, collapsed: collapsed.has(card.task.id), busy, onEdit: () => openEditor(card.task.id), onAdd: () => openEditor(undefined, card.task.id), onFold: () => fold(card.task.id), onSubtaskChange: (id, completed) => setSubtask(card.task.id, id, completed) } })));
   }, [data, members, hidden, collapsed, busy]);
 
   useEffect(() => {

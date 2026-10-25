@@ -1,6 +1,21 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { canParent, createStrategySeed, deleteStrategyCard, descendantIds, layoutStrategy, moveStrategyCards, parseStrategy, reparentStrategyCard, updateStrategyCard } from '../src/utils/strategy';
+import { canParent, createStrategySeed, deleteStrategyCard, descendantIds, layoutStrategy, moveStrategyCards, parseStrategy, reparentStrategyCard, setStrategySubtaskCompleted, updateStrategyCard } from '../src/utils/strategy';
+
+test('checklist saves intent on latest card without undoing concurrent checks or other edits', () => {
+  const initial = createStrategySeed();
+  initial.cards[0].task.subtasks = [{ id: 'first', title: 'Światło', completed: false }, { id: 'second', title: 'Rolety', completed: false }];
+  const theirs = setStrategySubtaskCompleted(initial, 'strategy-0-0', 'second', true);
+  theirs.cards[0].task.title = 'Aktualny tytuł Darka';
+  const ours = setStrategySubtaskCompleted(theirs, 'strategy-0-0', 'first', true);
+  assert.ok(ours.cards[0].task.subtasks.every(s => s.completed));
+  assert.equal(ours.cards[0].task.title, 'Aktualny tytuł Darka');
+  assert.equal(setStrategySubtaskCompleted(ours, 'strategy-0-0', 'first', true), ours);
+  assert.deepEqual(ours.cards.slice(1), initial.cards.slice(1));
+  assert.deepEqual(ours.cards[0].position, initial.cards[0].position);
+  assert.throws(() => setStrategySubtaskCompleted(ours, 'strategy-0-0', 'deleted', true), /usunięty/);
+  assert.equal(setStrategySubtaskCompleted(ours, 'strategy-0-0', 'first', false).cards[0].task.subtasks[0].completed, false);
+});
 
 test('strategy starts with six real root cards and recursively editable children', () => {
   const data = parseStrategy(createStrategySeed());

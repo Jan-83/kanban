@@ -70,6 +70,16 @@ export function updateStrategyCard(data: StrategyData, original: StrategyCard | 
   return parseStrategy(next);
 }
 
+export function setStrategySubtaskCompleted(data: StrategyData, cardId: string, subtaskId: string, completed: boolean): StrategyData {
+  const card = data.cards.find(c => c.task.id === cardId);
+  const step = card?.task.subtasks.find(s => s.id === subtaskId);
+  if (!card || !step) throw new Error('Ten krok został usunięty przez drugą osobę. Otwórz aktualną kartę.');
+  // Save the requested state, not a toggle: replaying after a CAS conflict
+  // must not undo a teammate who has just checked the same step.
+  if (step.completed === completed) return data;
+  return { ...data, cards: data.cards.map(c => c.task.id === cardId ? { ...c, task: { ...c.task, updatedAt: new Date().toISOString(), subtasks: c.task.subtasks.map(s => s.id === subtaskId ? { ...s, completed } : s) } } : c) };
+}
+
 export function reparentStrategyCard(data: StrategyData, id: string, parentId: string | null, expectedParent: string | null): StrategyData {
   const card = data.cards.find(c => c.task.id === id);
   if (!card || card.parentId !== expectedParent) throw new Error('Powiązanie tej karty zmieniło się. Wybierz ją ponownie.');
@@ -95,18 +105,19 @@ export function layoutStrategy(data: StrategyData, columns = 3): StrategyData {
   const roots = data.cards.filter(c => !c.parentId);
   let rowY = 30;
   for (let index = 0; index < roots.length; index += columns) {
-    let x = 40, maxCount = 0;
+    let x = 40, maxHeight = 0;
     for (const root of roots.slice(index, index + columns)) {
-      const stack = [{ card: root, depth: 0 }]; let count = 0, maxDepth = 0;
+      const stack = [{ card: root, depth: 0 }]; let height = 0, maxDepth = 0;
       while (stack.length) {
         const { card, depth } = stack.pop()!;
-        positions.set(card.task.id, { x: x + depth * 36, y: rowY + count++ * 230 }); maxDepth = Math.max(maxDepth, depth);
+        positions.set(card.task.id, { x: x + depth * 36, y: rowY + height }); maxDepth = Math.max(maxDepth, depth);
+        height += 230 + (card.task.subtasks.length ? Math.min(140, card.task.subtasks.length * 17 + 16) + 6 : 0);
         const children = data.cards.filter(c => c.parentId === card.task.id);
         for (const child of [...children].reverse()) stack.push({ card: child, depth: depth + 1 });
       }
-      x += 320 + maxDepth * 36; maxCount = Math.max(maxCount, count);
+      x += 320 + maxDepth * 36; maxHeight = Math.max(maxHeight, height);
     }
-    rowY += maxCount * 230 + 55;
+    rowY += maxHeight + 55;
   }
   return { ...data, cards: data.cards.map(c => ({ ...c, position: positions.get(c.task.id)! })) };
 }

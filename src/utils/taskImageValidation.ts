@@ -18,6 +18,13 @@ export function validTaskImage(image: unknown, taskId: string): image is TaskIma
     && typeof i.uploadedAt === 'string' && i.uploadedAt.length <= 50 && Number.isFinite(Date.parse(i.uploadedAt));
 }
 
+export function copiedTaskImage(image: TaskImage, taskId: string, id: string = crypto.randomUUID(), stamp = new Date().toISOString()): TaskImage {
+  const sourceTaskId = image.path.split('/')[1];
+  if (!validTaskImage(image, sourceTaskId) || !/^[a-zA-Z0-9_-]{1,120}$/.test(taskId) || !/^[a-zA-Z0-9_-]{1,120}$/.test(id)) throw new Error('Nieprawidłowe dane kopiowanego zdjęcia.');
+  const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[image.mimeType];
+  return { ...image, id, path: `${image.path.split('/')[0]}/${taskId}/${id}.${extension}`, uploadedAt: stamp };
+}
+
 export function validateImageFile(file: Pick<File, 'type' | 'size' | 'name'>): void {
   if (!IMAGE_MIME_TYPES.includes(file.type as TaskImage['mimeType'])) throw new Error('Wybierz zdjęcie JPG, PNG lub WebP.');
   if (file.size < 1 || file.size > MAX_IMAGE_BYTES) throw new Error('Zdjęcie „' + file.name + '” przekracza limit 5 MB lub jest puste.');

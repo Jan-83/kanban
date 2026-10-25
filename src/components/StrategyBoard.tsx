@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Background, Controls, Handle, MiniMap, Position, ReactFlow, applyNodeChanges, type Connection, type Node, type NodeProps, type ReactFlowInstance } from '@xyflow/react';
-import { Check, CheckSquare, ChevronDown, ChevronRight, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, X } from 'lucide-react';
+import { Check, CheckSquare, ChevronDown, ChevronRight, Copy, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, X } from 'lucide-react';
 import type { BoardUser, Task, TeamMember } from '../types/kanban';
 import type { StrategyCard, StrategyData, StrategyRepository } from '../types/strategy';
 import { canParent, cardPath, deleteStrategyCard, descendantIds, hiddenStrategyIds, layoutStrategy, moveStrategyCards, setStrategyConnection, setStrategySubtaskCompleted, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
@@ -9,12 +9,14 @@ import { TaskModal, type TaskDraft } from './TaskModal';
 import { TaskImageGallery } from './TaskImageGallery';
 import { PRIORITIES } from './TaskCard';
 import { useStrategyBoard } from './useStrategyBoard';
+import { StrategyCopyDialog } from './StrategyCopyDialog';
+import { appendStrategyCopy, type StrategyCopyPlan } from '../utils/strategyCopy';
 import '@xyflow/react/dist/style.css';
 import '../strategy.css';
 
 type CardNode = Node<{
   card: StrategyCard; members: TeamMember[]; count: number; collapsed: boolean; busy: boolean;
-  onEdit: () => void; onAdd: () => void; onFold: () => void; onSubtaskChange: (id: string, completed: boolean) => void;
+  onEdit: () => void; onAdd: () => void; onCopy: () => void; onFold: () => void; onSubtaskChange: (id: string, completed: boolean) => void;
 }, 'strategy'>;
 
 const StrategyNode = memo(function StrategyNode({ data, selected }: NodeProps<CardNode>) {
@@ -22,7 +24,7 @@ const StrategyNode = memo(function StrategyNode({ data, selected }: NodeProps<Ca
   const assigned = strategyAssignees(card, data.members);
   return <article className={'strategy-card' + (selected ? ' selected' : '') + (!card.parentIds.length ? ' root-card' : '')} style={{ '--strategy-color': task.color ?? '#64748b' } as CSSProperties} data-strategy-card={task.id}>
     <Handle type="target" position={Position.Left} aria-label={'Podepnij kartę ' + task.title} />
-    <div className="strategy-card-bar"><span>{STRATEGY_STAGES.find(s => s.id === task.status)?.title}</span><button className="icon-button nodrag" onClick={data.onAdd} disabled={busy} aria-label={'Dodaj podkartę do ' + task.title}><Plus size={17} /></button><Grip size={15} className="strategy-grip" /></div>
+    <div className="strategy-card-bar"><span>{STRATEGY_STAGES.find(s => s.id === task.status)?.title}</span><button className="icon-button nodrag nopan" onClick={data.onCopy} disabled={busy} aria-label={'Kopiuj kartę ' + task.title} title="Kopiuj kartę lub gałąź"><Copy size={15} /></button><button className="icon-button nodrag" onClick={data.onAdd} disabled={busy} aria-label={'Dodaj podkartę do ' + task.title}><Plus size={17} /></button><Grip size={15} className="strategy-grip" /></div>
     <button className="strategy-card-open nodrag" onClick={data.onEdit} disabled={busy} aria-label={'Edytuj kartę ' + task.title}><strong title={task.title}>{task.title}</strong><span>{task.description || 'Dodaj opis…'}</span></button>
     {!!task.images?.length && <div className="nodrag nopan strategy-card-images"><TaskImageGallery images={task.images} compact /></div>}
     <div className="strategy-card-tags">{task.priority !== 'medium' && <span className={'priority priority-' + task.priority}>{PRIORITIES[task.priority]}</span>}{task.tags.slice(0, 2).map(tag => <span key={tag} title={tag}>{tag}</span>)}</div>
@@ -51,14 +53,32 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [moveBranch, setMoveBranch] = useState(true), [full, setFull] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
+  const [copying, setCopying] = useState<string | null>(null);
   const [parentIds, setParentIds] = useState<string[]>([]), [parentSearch, setParentSearch] = useState(''), [colorBranch, setColorBranch] = useState(false);
   const [selected, setSelected] = useState<string | null>(null), [zoom, setZoom] = useState(85);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const dragging = useRef<Dragging | null>(null), initializedView = useRef(false);
   const canvas = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { onBusy?.(busy || !!editing); }, [busy, editing, onBusy]);
-  useEffect(() => { if (!full) return; const handle = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editing) setFull(false); }; window.addEventListener('keydown', handle); return () => window.removeEventListener('keydown', handle); }, [full, editing]);
+  useEffect(() => { onBusy?.(busy || !!editing || !!copying); }, [busy, editing, copying, onBusy]);
+  useEffect(() => { if (!full) return; const handle = (e: KeyboardEvent) => { if (e.key === 'Escape' && !editing && !copying) setFull(false); }; window.addEventListener('keydown', handle); return () => window.removeEventListener('keydown', handle); }, [full, editing, copying]);
+  const openCopy = (id: string) => { setError(''); setCopying(id); };
+  const copyCards = async (plan: StrategyCopyPlan) => {
+    const ok = await commit(latest => appendStrategyCopy(latest, plan));
+    if (ok) {
+      setCollapsed(previous => {
+        const next = new Set(previous), pending = [...plan.cards.find(c => c.task.id === plan.rootId)!.parentIds], seen = new Set<string>();
+        while (pending.length) { const id = pending.pop()!; if (seen.has(id)) continue; seen.add(id); next.delete(id); pending.push(...data.cards.find(c => c.task.id === id)?.parentIds ?? []); }
+        return next;
+      });
+      setSelected(plan.rootId); setSelectedEdge(null);
+      setTimeout(() => {
+        setFlowNodes(previous => previous.map(n => ({ ...n, selected: n.id === plan.rootId })));
+        void instance?.fitView({ nodes: [{ id: plan.rootId }], padding: .5, maxZoom: .9, duration: 250 });
+      }, 100);
+    }
+    return ok;
+  };
   const openEditor = (id?: string, parent: string | null = null) => {
     const original = id ? data.cards.find(c => c.task.id === id) : null;
     if (id && !original) return;
@@ -76,7 +96,7 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
 
   useEffect(() => {
     if (dragging.current) return;
-    setFlowNodes(previous => data.cards.map(card => ({ id: card.task.id, type: 'strategy', position: card.position, hidden: hidden.has(card.task.id), selected: previous.some(n => n.id === card.task.id && n.selected), data: { card, members, count: descendantIds(data, card.task.id).size, collapsed: collapsed.has(card.task.id), busy, onEdit: () => openEditor(card.task.id), onAdd: () => openEditor(undefined, card.task.id), onFold: () => fold(card.task.id), onSubtaskChange: (id, completed) => setSubtask(card.task.id, id, completed) } })));
+    setFlowNodes(previous => data.cards.map(card => ({ id: card.task.id, type: 'strategy', position: card.position, hidden: hidden.has(card.task.id), selected: previous.some(n => n.id === card.task.id && n.selected), data: { card, members, count: descendantIds(data, card.task.id).size, collapsed: collapsed.has(card.task.id), busy, onEdit: () => openEditor(card.task.id), onAdd: () => openEditor(undefined, card.task.id), onCopy: () => openCopy(card.task.id), onFold: () => fold(card.task.id), onSubtaskChange: (id, completed) => setSubtask(card.task.id, id, completed) } })));
   }, [data, members, hidden, collapsed, busy]);
 
   useEffect(() => {
@@ -162,7 +182,7 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const busyOrLoading = busy || !snapshot;
   return <section className={'strategy-board' + (full ? ' strategy-fullscreen' : '')} aria-label="Wspólna tablica strategiczna">
     <header className="strategy-heading"><div><p className="eyebrow">INTELISPACES / KIERUNKI ROZWOJU</p><h1>Pomysły, które łączą się w plan.</h1><p>Kliknij kartę, aby edytować. Przeciągnij kartę lub tło. Kółko myszy przybliża, Shift zaznacza grupę.</p></div><div className="strategy-sync" role="status">{busy ? <><LoaderCircle size={15} className="spin" />Zapisywanie…</> : snapshot ? <><Check size={15} />Zapisano wspólnie · wersja {snapshot.revision}</> : 'Wczytywanie…'}{checkedAt && <small>Sprawdzono {new Date(checkedAt).toLocaleTimeString('pl-PL')}</small>}</div></header>
-    <div className="strategy-toolbar"><button className="button primary" onClick={() => openEditor()} disabled={busyOrLoading}><Plus size={16} />Nowa karta</button><button className="button" disabled={busyOrLoading} onClick={() => { if (confirm('Automatycznie ułożyć wszystkie gałęzie? Zmieni to ich zapisane pozycje dla obu osób.')) void commit(latest => layoutStrategy(latest)).then(ok => { if (ok) setTimeout(() => { void instance?.fitView({ padding: .12 }); }, 80); }); }}><Network size={16} />Ułóż gałęzie</button><button className="button" onClick={() => { void instance?.fitView({ padding: .12, duration: 250 }); }}><Scan size={16} />Cała tablica</button><button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openEditor(selectedCard.task.id); }}><Network size={15} />Połączenia karty</button><button className="button" disabled={busyOrLoading || !connectionToRemove} onClick={() => { if (connectionToRemove) void commit(latest => setStrategyConnection(latest, connectionToRemove.target, connectionToRemove.source, false)).then(ok => { if (ok) setSelectedEdge(null); }); }}><Unplug size={15} />Usuń połączenie</button><button className="icon-button" onClick={() => { setError(''); void refresh(); }} disabled={busyOrLoading} aria-label="Odśwież strategię"><RefreshCw size={17} /></button><button className="icon-button" onClick={exportBoard} disabled={!snapshot || busy} aria-label="Pobierz kopię tablicy strategicznej"><Download size={17} /></button><button className="icon-button" onClick={() => setFull(!full)} aria-label={full ? 'Zamknij pełny ekran' : 'Pełny ekran tablicy'}>{full ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</button><span className="strategy-zoom">{zoom}%</span></div>
+    <div className="strategy-toolbar"><button className="button primary" onClick={() => openEditor()} disabled={busyOrLoading}><Plus size={16} />Nowa karta</button><button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openCopy(selectedCard.task.id); }}><Copy size={15} />Kopiuj kartę</button><button className="button" disabled={busyOrLoading} onClick={() => { if (confirm('Automatycznie ułożyć wszystkie gałęzie? Zmieni to ich zapisane pozycje dla obu osób.')) void commit(latest => layoutStrategy(latest)).then(ok => { if (ok) setTimeout(() => { void instance?.fitView({ padding: .12 }); }, 80); }); }}><Network size={16} />Ułóż gałęzie</button><button className="button" onClick={() => { void instance?.fitView({ padding: .12, duration: 250 }); }}><Scan size={16} />Cała tablica</button><button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openEditor(selectedCard.task.id); }}><Network size={15} />Połączenia karty</button><button className="button" disabled={busyOrLoading || !connectionToRemove} onClick={() => { if (connectionToRemove) void commit(latest => setStrategyConnection(latest, connectionToRemove.target, connectionToRemove.source, false)).then(ok => { if (ok) setSelectedEdge(null); }); }}><Unplug size={15} />Usuń połączenie</button><button className="icon-button" onClick={() => { setError(''); void refresh(); }} disabled={busyOrLoading} aria-label="Odśwież strategię"><RefreshCw size={17} /></button><button className="icon-button" onClick={exportBoard} disabled={!snapshot || busy} aria-label="Pobierz kopię tablicy strategicznej"><Download size={17} /></button><button className="icon-button" onClick={() => setFull(!full)} aria-label={full ? 'Zamknij pełny ekran' : 'Pełny ekran tablicy'}>{full ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</button><span className="strategy-zoom">{zoom}%</span></div>
     <div className="strategy-options"><label><input type="checkbox" checked={moveBranch} onChange={e => setMoveBranch(e.target.checked)} />Przesuwaj kartę razem z podkartami</label><span>Jedna karta może mieć wiele połączeń. Połącz dolny punkt z lewym. Aby odłączyć, kliknij linię i „Usuń połączenie”.</span></div>
     {error && <div className="notice error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Zamknij komunikat strategii" onClick={() => setError('')}><X size={16} /></button></div>}
     <div className="strategy-canvas" ref={canvas} onKeyDownCapture={moveWithKeyboard}>
@@ -171,6 +191,7 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
       </ReactFlow> : <div className="empty-state">{error ? 'Nie wczytano strategii. Użyj przycisku odświeżania.' : 'Wczytywanie wspólnej tablicy…'}</div>}
     </div>
     <footer className="strategy-footer"><span>{data.cards.filter(c => !c.parentIds.length).length} głównych kart · {data.cards.length} kart łącznie</span><span>Zmiany treści i pozycji są wspólne. Powiększenie i zwinięte gałęzie są Twoim widokiem.</span></footer>
+    {copying && <StrategyCopyDialog data={data} sourceId={copying} error={error} onCopy={copyCards} onClose={() => setCopying(null)} />}
     {editing && <TaskModal isOpen onClose={() => setEditing(null)} onSave={save} onDelete={async () => !!editing.original && commit(latest => deleteStrategyCard(latest, editing.original!))} initialTask={editing.original?.task ?? null} defaultStatus="discuss" defaultNewTaskId={editing.id} teamMembers={members} stages={STRATEGY_STAGES} busy={busy} error={error} currentUser={user} strategyCard extraFields={<div className="strategy-editor-extra">
       <fieldset className="strategy-parent-picker" disabled={busy}>
         <legend>Podepnij pod karty · {parentIds.length}</legend>

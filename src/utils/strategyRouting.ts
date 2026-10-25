@@ -8,8 +8,6 @@ interface Rect { left: number; right: number; top: number; bottom: number; }
 interface Segment { a: RoutePoint; b: RoutePoint; }
 const EPS = .01, LANE = 12;
 export const portFraction = (index: number, count: number) => .16 + .68 * (index + 1) / (count + 1);
-export const sourcePort = (target: string) => 'to:' + target;
-export const targetPort = (source: string) => 'from:' + source;
 
 export function strategyPorts(links: RouteLink[]): Map<string, CardPorts> {
   const ports = new Map<string, CardPorts>();

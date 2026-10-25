@@ -2,10 +2,10 @@ import type { Task } from './kanban';
 
 export interface StrategyCard {
   task: Task;
-  parentId: string | null;
+  parentIds: string[];
   position: { x: number; y: number };
 }
-export interface StrategyData { version: 1; cards: StrategyCard[]; }
+export interface StrategyData { version: 2; cards: StrategyCard[]; }
 export interface StrategySnapshot { data: StrategyData; revision: number; }
 export interface StrategyRepository {
   load: (signal?: AbortSignal) => Promise<StrategySnapshot>;

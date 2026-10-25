@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { Background, BaseEdge, Controls, Handle, MiniMap, Position, ReactFlow, applyNodeChanges, useUpdateNodeInternals, type Connection, type Edge, type EdgeProps, type Node, type NodeProps, type ReactFlowInstance } from '@xyflow/react';
+import { Background, BaseEdge, Controls, Handle, MiniMap, Position, ReactFlow, applyNodeChanges, type Connection, type Edge, type EdgeProps, type Node, type NodeProps, type ReactFlowInstance } from '@xyflow/react';
 import { Check, CheckSquare, ChevronDown, ChevronRight, CircleHelp, Copy, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, Workflow, X } from 'lucide-react';
 import type { BoardUser, Task, TeamMember } from '../types/kanban';
 import type { StrategyCard, StrategyData, StrategyRepository } from '../types/strategy';
@@ -11,7 +11,7 @@ import { PRIORITIES } from './TaskCard';
 import { useStrategyBoard } from './useStrategyBoard';
 import { StrategyCopyDialog } from './StrategyCopyDialog';
 import { appendStrategyCopy, type StrategyCopyPlan } from '../utils/strategyCopy';
-import { portFraction, routeStrategy, sourcePort, strategyPorts, targetPort, type CardPorts, type RouteNode } from '../utils/strategyRouting';
+import { routeStrategy, type RouteNode } from '../utils/strategyRouting';
 import '@xyflow/react/dist/style.css';
 import '../strategy.css';
 
@@ -33,18 +33,15 @@ function StrategyHelp({ onClose }: { onClose: () => void }) {
 }
 
 type CardNode = Node<{
-  card: StrategyCard; members: TeamMember[]; count: number; collapsed: boolean; busy: boolean; ports: CardPorts;
+  card: StrategyCard; members: TeamMember[]; count: number; collapsed: boolean; busy: boolean;
   onEdit: () => void; onAdd: () => void; onCopy: () => void; onFold: () => void; onSubtaskChange: (id: string, completed: boolean) => void;
 }, 'strategy'>;
 
-const StrategyNode = memo(function StrategyNode({ id, data, selected }: NodeProps<CardNode>) {
+const StrategyNode = memo(function StrategyNode({ data, selected }: NodeProps<CardNode>) {
   const { card, count, collapsed, busy } = data, task = card.task;
-  const updateInternals = useUpdateNodeInternals(), portsKey = JSON.stringify(data.ports);
-  useEffect(() => { updateInternals(id); }, [id, portsKey, updateInternals]);
   const assigned = strategyAssignees(card, data.members);
   return <article className={'strategy-card' + (selected ? ' selected' : '') + (!card.parentIds.length ? ' root-card' : '')} style={{ '--strategy-color': task.color ?? '#64748b' } as CSSProperties} data-strategy-card={task.id}>
     <Handle type="target" position={Position.Left} aria-label={'Podepnij kartę ' + task.title} />
-    {data.ports.targets.map((parent, i) => <Handle key={parent} id={targetPort(parent)} type="target" position={Position.Left} isConnectable={false} className="strategy-route-port" style={{ top: `${portFraction(i, data.ports.targets.length) * 100}%` }} />)}
     <div className="strategy-card-bar"><span>{STRATEGY_STAGES.find(s => s.id === task.status)?.title}</span><button className="icon-button nodrag nopan" onClick={data.onCopy} disabled={busy} aria-label={'Kopiuj kartę ' + task.title} title="Kopiuj kartę lub gałąź"><Copy size={15} /></button><button className="icon-button nodrag" onClick={data.onAdd} disabled={busy} aria-label={'Dodaj podkartę do ' + task.title}><Plus size={17} /></button><Grip size={15} className="strategy-grip" /></div>
     <button className="strategy-card-open nodrag" onClick={data.onEdit} disabled={busy} aria-label={'Edytuj kartę ' + task.title}><strong title={task.title}>{task.title}</strong><span>{task.description || 'Dodaj opis…'}</span></button>
     {!!task.images?.length && <div className="nodrag nopan strategy-card-images"><TaskImageGallery images={task.images} compact /></div>}
@@ -58,7 +55,6 @@ const StrategyNode = memo(function StrategyNode({ id, data, selected }: NodeProp
     </div>}
     <div className="strategy-card-bottom">{count > 0 && <button className="strategy-fold nodrag" aria-expanded={!collapsed} onClick={data.onFold}>{collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}{count} podkart</button>}{task.subtasks.length > 0 && <span title="Wykonane kroki"><CheckSquare size={13} />{task.subtasks.filter(s => s.completed).length}/{task.subtasks.length}</span>}{!!task.statusComments?.length && <span title="Komentarze o statusie"><MessageSquare size={13} />{task.statusComments.length}</span>}<span className="strategy-people">{assigned.map(person => <span className="strategy-person" key={person.id} title={person.name} style={{ backgroundColor: person.color }}>{person.name.split(' ').map(n => n[0]).slice(0, 2).join('')}</span>)}</span></div>
     <Handle type="source" position={Position.Bottom} aria-label={'Połącz z podkartą: ' + task.title} />
-    {data.ports.sources.map((child, i) => <Handle key={child} id={sourcePort(child)} type="source" position={Position.Bottom} isConnectable={false} className="strategy-route-port" style={{ left: `${portFraction(i, data.ports.sources.length) * 100}%` }} />)}
   </article>;
 });
 const nodeTypes = { strategy: StrategyNode };
@@ -126,12 +122,11 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   };
   const hidden = useMemo(() => hiddenStrategyIds(data, collapsed), [data, collapsed]);
   const links = useMemo(() => data.cards.flatMap(c => c.parentIds.filter(parent => !hidden.has(c.task.id) && !hidden.has(parent) && !collapsed.has(parent)).map(parent => ({ id: parent + '->' + c.task.id, source: parent, target: c.task.id }))), [data, hidden, collapsed]);
-  const ports = useMemo(() => strategyPorts(links), [links]);
 
   useEffect(() => {
     if (dragging.current) return;
-    setFlowNodes(previous => data.cards.map(card => ({ id: card.task.id, type: 'strategy', position: card.position, hidden: hidden.has(card.task.id), measured: previous.find(n => n.id === card.task.id)?.measured, selected: previous.some(n => n.id === card.task.id && n.selected), data: { card, members, ports: ports.get(card.task.id) ?? { sources: [], targets: [] }, count: descendantIds(data, card.task.id).size, collapsed: collapsed.has(card.task.id), busy, onEdit: () => openEditor(card.task.id), onAdd: () => openEditor(undefined, card.task.id), onCopy: () => openCopy(card.task.id), onFold: () => fold(card.task.id), onSubtaskChange: (id, completed) => setSubtask(card.task.id, id, completed) } })));
-  }, [data, members, hidden, collapsed, busy, ports]);
+    setFlowNodes(previous => data.cards.map(card => ({ id: card.task.id, type: 'strategy', position: card.position, hidden: hidden.has(card.task.id), measured: previous.find(n => n.id === card.task.id)?.measured, selected: previous.some(n => n.id === card.task.id && n.selected), data: { card, members, count: descendantIds(data, card.task.id).size, collapsed: collapsed.has(card.task.id), busy, onEdit: () => openEditor(card.task.id), onAdd: () => openEditor(undefined, card.task.id), onCopy: () => openCopy(card.task.id), onFold: () => fold(card.task.id), onSubtaskChange: (id, completed) => setSubtask(card.task.id, id, completed) } })));
+  }, [data, members, hidden, collapsed, busy]);
 
   useEffect(() => {
     if (!instance || !flowNodes.length || initializedView.current) return;
@@ -156,7 +151,8 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const geometryKey = JSON.stringify(flowNodes.filter(n => !n.hidden).map(n => ({ id: n.id, x: n.position.x, y: n.position.y, width: n.measured?.width ?? 280, height: n.measured?.height ?? 147 })));
   const linksKey = JSON.stringify(links);
   const routes = useMemo(() => routeStrategy(JSON.parse(geometryKey) as RouteNode[], JSON.parse(linksKey)), [geometryKey, linksKey]);
-  const edges = useMemo(() => links.map(link => ({ ...link, sourceHandle: sourcePort(link.target), targetHandle: targetPort(link.source), type: 'strategyRoute', data: { path: routes.get(link.id)?.path ?? '' }, selected: selectedEdge === link.id, style: { stroke: data.cards.find(c => c.task.id === link.target)?.task.color ?? '#64748b', strokeWidth: selectedEdge === link.id ? 4 : 2 }, ariaLabel: 'Połączenie: ' + data.cards.find(c => c.task.id === link.source)?.task.title + ' → ' + data.cards.find(c => c.task.id === link.target)?.task.title, deletable: false })), [links, routes, selectedEdge, data]);
+  // Stable interactive handles create links; the router spreads their visual endpoints.
+  const edges = useMemo(() => links.map(link => ({ ...link, type: 'strategyRoute', data: { path: routes.get(link.id)?.path ?? '' }, selected: selectedEdge === link.id, style: { stroke: data.cards.find(c => c.task.id === link.target)?.task.color ?? '#64748b', strokeWidth: selectedEdge === link.id ? 4 : 2 }, ariaLabel: 'Połączenie: ' + data.cards.find(c => c.task.id === link.source)?.task.title + ' → ' + data.cards.find(c => c.task.id === link.target)?.task.title, deletable: false })), [links, routes, selectedEdge, data]);
   const blockedRoutes = [...routes.values()].filter(route => route.blocked).length;
 
   const startDrag = (card: CardNode, selectedNodes: CardNode[] = [card]) => {

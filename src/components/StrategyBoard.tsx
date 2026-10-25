@@ -3,7 +3,7 @@ import { Background, Controls, Handle, MiniMap, Position, ReactFlow, applyNodeCh
 import { Check, CheckSquare, ChevronDown, ChevronRight, Download, Grip, LoaderCircle, Maximize2, MessageSquare, Minimize2, Network, Plus, RefreshCw, Scan, Unplug, X } from 'lucide-react';
 import type { BoardUser, Task, TeamMember } from '../types/kanban';
 import type { StrategyCard, StrategyData, StrategyRepository } from '../types/strategy';
-import { canParent, cardPath, deleteStrategyCard, descendantIds, layoutStrategy, moveStrategyCards, reparentStrategyCard, setStrategySubtaskCompleted, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
+import { canParent, cardPath, deleteStrategyCard, descendantIds, hiddenStrategyIds, layoutStrategy, moveStrategyCards, setStrategyConnection, setStrategySubtaskCompleted, strategyAssignees, STRATEGY_STAGES, updateStrategyCard } from '../utils/strategy';
 import { strategyRepository } from '../utils/strategyRepository';
 import { TaskModal, type TaskDraft } from './TaskModal';
 import { TaskImageGallery } from './TaskImageGallery';
@@ -20,12 +20,13 @@ type CardNode = Node<{
 const StrategyNode = memo(function StrategyNode({ data, selected }: NodeProps<CardNode>) {
   const { card, count, collapsed, busy } = data, task = card.task;
   const assigned = strategyAssignees(card, data.members);
-  return <article className={'strategy-card' + (selected ? ' selected' : '') + (!card.parentId ? ' root-card' : '')} style={{ '--strategy-color': task.color ?? '#64748b' } as CSSProperties} data-strategy-card={task.id}>
+  return <article className={'strategy-card' + (selected ? ' selected' : '') + (!card.parentIds.length ? ' root-card' : '')} style={{ '--strategy-color': task.color ?? '#64748b' } as CSSProperties} data-strategy-card={task.id}>
     <Handle type="target" position={Position.Left} aria-label={'Podepnij kartę ' + task.title} />
     <div className="strategy-card-bar"><span>{STRATEGY_STAGES.find(s => s.id === task.status)?.title}</span><button className="icon-button nodrag" onClick={data.onAdd} disabled={busy} aria-label={'Dodaj podkartę do ' + task.title}><Plus size={17} /></button><Grip size={15} className="strategy-grip" /></div>
     <button className="strategy-card-open nodrag" onClick={data.onEdit} disabled={busy} aria-label={'Edytuj kartę ' + task.title}><strong title={task.title}>{task.title}</strong><span>{task.description || 'Dodaj opis…'}</span></button>
     {!!task.images?.length && <div className="nodrag nopan strategy-card-images"><TaskImageGallery images={task.images} compact /></div>}
     <div className="strategy-card-tags">{task.priority !== 'medium' && <span className={'priority priority-' + task.priority}>{PRIORITIES[task.priority]}</span>}{task.tags.slice(0, 2).map(tag => <span key={tag} title={tag}>{tag}</span>)}</div>
+    {card.parentIds.length > 1 && <button className="strategy-shared nodrag nopan" onClick={data.onEdit} disabled={busy} aria-label={'Połączenia karty ' + task.title}><Network size={13} />Wspólna dla {card.parentIds.length} kart</button>}
     {task.subtasks.length > 0 && <div className="card-subtasks-preview strategy-card-checklist nodrag nopan nowheel" aria-label={'Lista kroków: ' + task.title} onClick={event => event.stopPropagation()}>
       {task.subtasks.map(step => <label key={step.id} className={'card-subtask-item' + (step.completed ? ' is-completed' : '')}>
         <input type="checkbox" checked={step.completed} disabled={busy} aria-label={step.title} onChange={event => data.onSubtaskChange(step.id, event.target.checked)} />
@@ -40,7 +41,7 @@ const nodeTypes = { strategy: StrategyNode };
 interface Props { user: BoardUser; members: TeamMember[]; onAccessLost: () => void; repository?: StrategyRepository; onBusy?: (busy: boolean) => void; }
 interface Editing { original: StrategyCard | null; id: string; position: StrategyCard['position']; }
 interface Dragging { anchor: string; positions: Map<string, StrategyCard['position']>; }
-const EMPTY: StrategyData = { version: 1, cards: [] };
+const EMPTY: StrategyData = { version: 2, cards: [] };
 
 export function StrategyBoard({ user, members, onAccessLost, repository = strategyRepository, onBusy }: Props) {
   const { snapshot, busy, error, setError, checkedAt, commit, refresh, hold } = useStrategyBoard(repository, onAccessLost);
@@ -50,8 +51,9 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [moveBranch, setMoveBranch] = useState(true), [full, setFull] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
-  const [parentId, setParentId] = useState<string | null>(null), [colorBranch, setColorBranch] = useState(false);
+  const [parentIds, setParentIds] = useState<string[]>([]), [parentSearch, setParentSearch] = useState(''), [colorBranch, setColorBranch] = useState(false);
   const [selected, setSelected] = useState<string | null>(null), [zoom, setZoom] = useState(85);
+  const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const dragging = useRef<Dragging | null>(null), initializedView = useRef(false);
   const canvas = useRef<HTMLDivElement>(null);
 
@@ -62,15 +64,15 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
     if (id && !original) return;
     const p = data.cards.find(c => c.task.id === parent);
     const view = canvas.current?.getBoundingClientRect();
-    const position = original?.position ?? (p ? { x: p.position.x + 40, y: Math.max(p.position.y, ...data.cards.filter(c => c.parentId === parent).map(c => c.position.y)) + 230 } : instance && view ? instance.screenToFlowPosition({ x: view.x + view.width / 2 - 140, y: view.y + 90 }) : { x: 40, y: 30 });
+    const position = original?.position ?? (p ? { x: p.position.x + 40, y: Math.max(p.position.y, ...data.cards.filter(c => parent && c.parentIds.includes(parent)).map(c => c.position.y)) + 230 } : instance && view ? instance.screenToFlowPosition({ x: view.x + view.width / 2 - 140, y: view.y + 90 }) : { x: 40, y: 30 });
     setEditing({ original: original ? structuredClone(original) : null, id: original?.task.id ?? crypto.randomUUID(), position });
-    setParentId(original?.parentId ?? parent); setColorBranch(false); setError('');
+    setParentIds([...(original?.parentIds ?? (parent ? [parent] : []))]); setParentSearch(''); setColorBranch(false); setError('');
   };
   const fold = (id: string) => setCollapsed(previous => { const next = new Set(previous); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const setSubtask = (cardId: string, subtaskId: string, completed: boolean) => {
     void commit(latest => setStrategySubtaskCompleted(latest, cardId, subtaskId, completed));
   };
-  const hidden = useMemo(() => { const ids = new Set<string>(); for (const id of collapsed) for (const child of descendantIds(data, id)) ids.add(child); return ids; }, [data, collapsed]);
+  const hidden = useMemo(() => hiddenStrategyIds(data, collapsed), [data, collapsed]);
 
   useEffect(() => {
     if (dragging.current) return;
@@ -96,7 +98,7 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
     observer.observe(element);
     return () => observer.disconnect();
   }, [instance]);
-  const edges = useMemo(() => data.cards.filter(c => c.parentId && !hidden.has(c.task.id) && !hidden.has(c.parentId)).map(c => ({ id: c.parentId + '--' + c.task.id, source: c.parentId!, target: c.task.id, type: 'smoothstep', style: { stroke: c.task.color ?? '#64748b', strokeWidth: 2 }, deletable: false })), [data, hidden]);
+  const edges = useMemo(() => data.cards.flatMap(c => c.parentIds.filter(parent => !hidden.has(c.task.id) && !hidden.has(parent) && !collapsed.has(parent)).map(parent => ({ id: parent + '->' + c.task.id, source: parent, target: c.task.id, type: 'smoothstep', selected: selectedEdge === parent + '->' + c.task.id, style: { stroke: c.task.color ?? '#64748b', strokeWidth: selectedEdge === parent + '->' + c.task.id ? 4 : 2 }, ariaLabel: 'Połączenie: ' + data.cards.find(p => p.task.id === parent)?.task.title + ' → ' + c.task.title, deletable: false }))), [data, hidden, collapsed, selectedEdge]);
 
   const startDrag = (card: CardNode, selectedNodes: CardNode[] = [card]) => {
     if (dragging.current || busy) return;
@@ -121,8 +123,8 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
   const connect = (connection: Connection) => {
     const child = data.cards.find(c => c.task.id === connection.target);
     if (!child || !connection.source) return;
-    const parent = connection.source, childId = child.task.id, previous = child.parentId;
-    void commit(latest => reparentStrategyCard(latest, childId, parent, previous));
+    const parent = connection.source, childId = child.task.id;
+    void commit(latest => setStrategyConnection(latest, childId, parent, true));
   };
   const moveWithKeyboard = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) || busy) return;
@@ -142,8 +144,12 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
     const { id: _id, newTaskId: _newId, ...fields } = draft;
     const now = new Date().toISOString();
     const task: Task = { ...fields, id: editing.id, createdAt: editing.original?.task.createdAt ?? now, updatedAt: now };
-    const ok = await commit(latest => updateStrategyCard(latest, editing.original, task, parentId, editing.position, colorBranch));
-    if (ok && parentId) setCollapsed(previous => { const next = new Set(previous); let p: string | null = parentId; while (p) { next.delete(p); p = data.cards.find(c => c.task.id === p)?.parentId ?? null; } return next; });
+    const ok = await commit(latest => updateStrategyCard(latest, editing.original, task, parentIds, editing.position, colorBranch));
+    if (ok) setCollapsed(previous => {
+      const next = new Set(previous), seen = new Set<string>(), pending = [...parentIds];
+      while (pending.length) { const id = pending.pop()!; if (seen.has(id)) continue; seen.add(id); next.delete(id); pending.push(...data.cards.find(c => c.task.id === id)?.parentIds ?? []); }
+      return next;
+    });
     return ok;
   };
   const exportBoard = () => {
@@ -151,18 +157,29 @@ export function StrategyBoard({ user, members, onAccessLost, repository = strate
     const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = 'tablica-strategiczna-' + new Date().toISOString().slice(0, 10) + '.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const selectedCard = data.cards.find(c => c.task.id === selected);
+  const connectionToRemove = edges.find(edge => edge.id === selectedEdge);
+  const parentOptions = editing ? data.cards.filter(c => c.task.id !== editing.id && canParent(data, editing.id, c.task.id)).map(c => ({ id: c.task.id, title: c.task.title, path: cardPath(data, c.task.id) })).filter(c => c.path.toLocaleLowerCase('pl').includes(parentSearch.toLocaleLowerCase('pl'))) : [];
   const busyOrLoading = busy || !snapshot;
   return <section className={'strategy-board' + (full ? ' strategy-fullscreen' : '')} aria-label="Wspólna tablica strategiczna">
     <header className="strategy-heading"><div><p className="eyebrow">INTELISPACES / KIERUNKI ROZWOJU</p><h1>Pomysły, które łączą się w plan.</h1><p>Kliknij kartę, aby edytować. Przeciągnij kartę lub tło. Kółko myszy przybliża, Shift zaznacza grupę.</p></div><div className="strategy-sync" role="status">{busy ? <><LoaderCircle size={15} className="spin" />Zapisywanie…</> : snapshot ? <><Check size={15} />Zapisano wspólnie · wersja {snapshot.revision}</> : 'Wczytywanie…'}{checkedAt && <small>Sprawdzono {new Date(checkedAt).toLocaleTimeString('pl-PL')}</small>}</div></header>
-    <div className="strategy-toolbar"><button className="button primary" onClick={() => openEditor()} disabled={busyOrLoading}><Plus size={16} />Nowa karta</button><button className="button" disabled={busyOrLoading} onClick={() => { if (confirm('Automatycznie ułożyć wszystkie gałęzie? Zmieni to ich zapisane pozycje dla obu osób.')) void commit(latest => layoutStrategy(latest)).then(ok => { if (ok) setTimeout(() => { void instance?.fitView({ padding: .12 }); }, 80); }); }}><Network size={16} />Ułóż gałęzie</button><button className="button" onClick={() => { void instance?.fitView({ padding: .12, duration: 250 }); }}><Scan size={16} />Cała tablica</button><button className="button" disabled={busyOrLoading || !selectedCard?.parentId} onClick={() => { if (selectedCard) void commit(latest => reparentStrategyCard(latest, selectedCard.task.id, null, selectedCard.parentId)); }}><Unplug size={15} />Odłącz kartę</button><button className="icon-button" onClick={() => { setError(''); void refresh(); }} disabled={busyOrLoading} aria-label="Odśwież strategię"><RefreshCw size={17} /></button><button className="icon-button" onClick={exportBoard} disabled={!snapshot || busy} aria-label="Pobierz kopię tablicy strategicznej"><Download size={17} /></button><button className="icon-button" onClick={() => setFull(!full)} aria-label={full ? 'Zamknij pełny ekran' : 'Pełny ekran tablicy'}>{full ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</button><span className="strategy-zoom">{zoom}%</span></div>
-    <div className="strategy-options"><label><input type="checkbox" checked={moveBranch} onChange={e => setMoveBranch(e.target.checked)} />Przesuwaj kartę razem z podkartami</label><span>Połącz dolny punkt karty z lewym punktem podkarty.</span></div>
+    <div className="strategy-toolbar"><button className="button primary" onClick={() => openEditor()} disabled={busyOrLoading}><Plus size={16} />Nowa karta</button><button className="button" disabled={busyOrLoading} onClick={() => { if (confirm('Automatycznie ułożyć wszystkie gałęzie? Zmieni to ich zapisane pozycje dla obu osób.')) void commit(latest => layoutStrategy(latest)).then(ok => { if (ok) setTimeout(() => { void instance?.fitView({ padding: .12 }); }, 80); }); }}><Network size={16} />Ułóż gałęzie</button><button className="button" onClick={() => { void instance?.fitView({ padding: .12, duration: 250 }); }}><Scan size={16} />Cała tablica</button><button className="button" disabled={busyOrLoading || !selectedCard} onClick={() => { if (selectedCard) openEditor(selectedCard.task.id); }}><Network size={15} />Połączenia karty</button><button className="button" disabled={busyOrLoading || !connectionToRemove} onClick={() => { if (connectionToRemove) void commit(latest => setStrategyConnection(latest, connectionToRemove.target, connectionToRemove.source, false)).then(ok => { if (ok) setSelectedEdge(null); }); }}><Unplug size={15} />Usuń połączenie</button><button className="icon-button" onClick={() => { setError(''); void refresh(); }} disabled={busyOrLoading} aria-label="Odśwież strategię"><RefreshCw size={17} /></button><button className="icon-button" onClick={exportBoard} disabled={!snapshot || busy} aria-label="Pobierz kopię tablicy strategicznej"><Download size={17} /></button><button className="icon-button" onClick={() => setFull(!full)} aria-label={full ? 'Zamknij pełny ekran' : 'Pełny ekran tablicy'}>{full ? <Minimize2 size={17} /> : <Maximize2 size={17} />}</button><span className="strategy-zoom">{zoom}%</span></div>
+    <div className="strategy-options"><label><input type="checkbox" checked={moveBranch} onChange={e => setMoveBranch(e.target.checked)} />Przesuwaj kartę razem z podkartami</label><span>Jedna karta może mieć wiele połączeń. Połącz dolny punkt z lewym. Aby odłączyć, kliknij linię i „Usuń połączenie”.</span></div>
     {error && <div className="notice error" role="alert"><span>{error}</span><button className="icon-button" aria-label="Zamknij komunikat strategii" onClick={() => setError('')}><X size={16} /></button></div>}
     <div className="strategy-canvas" ref={canvas} onKeyDownCapture={moveWithKeyboard}>
-      {snapshot ? <ReactFlow<CardNode> nodes={flowNodes} edges={edges} nodeTypes={nodeTypes} onInit={setInstance} onNodesChange={changes => setFlowNodes(previous => applyNodeChanges(changes, previous))} onNodeDragStart={(_, n, group) => startDrag(n, group)} onNodeDrag={(_, n) => drag(n)} onNodeDragStop={(_, n) => stopDrag(n)} onSelectionDragStart={(_, group) => { if (group[0]) startDrag(group[0], group); }} onSelectionDrag={(_, group) => { if (group[0]) drag(group[0]); }} onSelectionDragStop={(_, group) => { if (group[0]) stopDrag(group[0]); }} onConnect={connect} isValidConnection={c => !!c.source && !!c.target && canParent(data, c.target, c.source)} onSelectionChange={({ nodes }) => setSelected(nodes[0]?.id ?? null)} onMoveEnd={(_, viewport) => { setZoom(Math.round(viewport.zoom * 100)); try { sessionStorage.setItem('kanban-strategy-viewport', JSON.stringify(viewport)); } catch {} }} nodesDraggable={!busy} nodesConnectable={!busy} deleteKeyCode={null} multiSelectionKeyCode={['Meta', 'Control']} selectionKeyCode="Shift" minZoom={.1} maxZoom={2} panOnDrag={[0, 1]} zoomOnScroll zoomOnPinch preventScrolling colorMode="system" ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': 'Przybliż', 'controls.zoomOut.ariaLabel': 'Oddal', 'controls.fitView.ariaLabel': 'Pokaż całą tablicę', 'minimap.ariaLabel': 'Mapa tablicy strategicznej' }}>
+      {snapshot ? <ReactFlow<CardNode> nodes={flowNodes} edges={edges} nodeTypes={nodeTypes} onInit={setInstance} onNodesChange={changes => setFlowNodes(previous => applyNodeChanges(changes, previous))} onNodeDragStart={(_, n, group) => startDrag(n, group)} onNodeDrag={(_, n) => drag(n)} onNodeDragStop={(_, n) => stopDrag(n)} onSelectionDragStart={(_, group) => { if (group[0]) startDrag(group[0], group); }} onSelectionDrag={(_, group) => { if (group[0]) drag(group[0]); }} onSelectionDragStop={(_, group) => { if (group[0]) stopDrag(group[0]); }} onConnect={connect} onEdgeClick={(_, edge) => setSelectedEdge(edge.id)} onNodeClick={() => setSelectedEdge(null)} onPaneClick={() => setSelectedEdge(null)} isValidConnection={c => !!c.source && !!c.target && canParent(data, c.target, c.source) && !data.cards.find(card => card.task.id === c.target)?.parentIds.includes(c.source)} onSelectionChange={({ nodes }) => setSelected(nodes[0]?.id ?? null)} onMoveEnd={(_, viewport) => { setZoom(Math.round(viewport.zoom * 100)); try { sessionStorage.setItem('kanban-strategy-viewport', JSON.stringify(viewport)); } catch {} }} nodesDraggable={!busy} nodesConnectable={!busy} deleteKeyCode={null} multiSelectionKeyCode={['Meta', 'Control']} selectionKeyCode="Shift" minZoom={.1} maxZoom={2} panOnDrag={[0, 1]} zoomOnScroll zoomOnPinch preventScrolling colorMode="system" ariaLabelConfig={{ 'controls.zoomIn.ariaLabel': 'Przybliż', 'controls.zoomOut.ariaLabel': 'Oddal', 'controls.fitView.ariaLabel': 'Pokaż całą tablicę', 'minimap.ariaLabel': 'Mapa tablicy strategicznej' }}>
         <Background gap={22} size={1} /><Controls showInteractive={false} /><MiniMap<CardNode> pannable zoomable nodeColor={n => n.data.card.task.color ?? '#64748b'} />
       </ReactFlow> : <div className="empty-state">{error ? 'Nie wczytano strategii. Użyj przycisku odświeżania.' : 'Wczytywanie wspólnej tablicy…'}</div>}
     </div>
-    <footer className="strategy-footer"><span>{data.cards.filter(c => !c.parentId).length} głównych kart · {data.cards.length} kart łącznie</span><span>Zmiany treści i pozycji są wspólne. Powiększenie i zwinięte gałęzie są Twoim widokiem.</span></footer>
-    {editing && <TaskModal isOpen onClose={() => setEditing(null)} onSave={save} onDelete={async () => !!editing.original && commit(latest => deleteStrategyCard(latest, editing.original!))} initialTask={editing.original?.task ?? null} defaultStatus="discuss" defaultNewTaskId={editing.id} teamMembers={members} stages={STRATEGY_STAGES} busy={busy} error={error} currentUser={user} strategyCard extraFields={<div className="strategy-editor-extra"><label>Karta nadrzędna<select aria-label="Karta nadrzędna" value={parentId ?? ''} onChange={e => setParentId(e.target.value || null)}><option value="">Brak — karta główna</option>{data.cards.filter(c => c.task.id !== editing.id && canParent(data, editing.id, c.task.id)).map(c => <option key={c.task.id} value={c.task.id}>{cardPath(data, c.task.id)}</option>)}</select></label><label className="strategy-checkbox"><input type="checkbox" checked={colorBranch} onChange={e => setColorBranch(e.target.checked)} />Zastosuj wybrany kolor również do wszystkich podkart</label></div>} />}
+    <footer className="strategy-footer"><span>{data.cards.filter(c => !c.parentIds.length).length} głównych kart · {data.cards.length} kart łącznie</span><span>Zmiany treści i pozycji są wspólne. Powiększenie i zwinięte gałęzie są Twoim widokiem.</span></footer>
+    {editing && <TaskModal isOpen onClose={() => setEditing(null)} onSave={save} onDelete={async () => !!editing.original && commit(latest => deleteStrategyCard(latest, editing.original!))} initialTask={editing.original?.task ?? null} defaultStatus="discuss" defaultNewTaskId={editing.id} teamMembers={members} stages={STRATEGY_STAGES} busy={busy} error={error} currentUser={user} strategyCard extraFields={<div className="strategy-editor-extra">
+      <fieldset className="strategy-parent-picker" disabled={busy}>
+        <legend>Podepnij pod karty · {parentIds.length}</legend>
+        <p>Zaznacz jedną lub kilka kart. Każda będzie prowadzić do tej samej treści i listy kroków.</p>
+        <div className="strategy-parent-chips">{parentIds.map(id => <button type="button" key={id} className="strategy-parent-chip" onClick={() => setParentIds(previous => previous.filter(p => p !== id))} aria-label={'Odłącz od: ' + (data.cards.find(c => c.task.id === id)?.task.title ?? id)}>{data.cards.find(c => c.task.id === id)?.task.title ?? 'Usunięta karta'}<X size={13} /></button>)}{!parentIds.length && <span>Brak połączeń nadrzędnych — karta główna.</span>}</div>
+        <input type="search" aria-label="Szukaj kart do podpięcia" placeholder="Szukaj kart…" value={parentSearch} onChange={e => setParentSearch(e.target.value)} />
+        <div className="strategy-parent-list">{parentOptions.map(option => <label key={option.id} className="strategy-parent-option"><input type="checkbox" checked={parentIds.includes(option.id)} aria-label={'Podepnij pod: ' + option.title} onChange={e => setParentIds(previous => e.target.checked ? [...previous, option.id] : previous.filter(id => id !== option.id))} /><span><strong>{option.title}</strong><small>{option.path}</small></span></label>)}{!parentOptions.length && <p>Brak pasujących kart.</p>}</div>
+      </fieldset>
+      <label className="strategy-checkbox"><input type="checkbox" checked={colorBranch} onChange={e => setColorBranch(e.target.checked)} />Zastosuj wybrany kolor również do wszystkich podkart, w tym współdzielonych</label>
+    </div>} />}
   </section>;
 }

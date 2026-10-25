@@ -37,7 +37,7 @@ const imageRepository: TaskImageRepository = {
 const strategyKey = 'kanban-strategy-preview';
 const readStrategy = () => { const raw = localStorage.getItem(strategyKey); return raw ? JSON.parse(raw) : { data: createStrategySeed(), revision: 0 }; };
 const strategyRepository: StrategyRepository = {
-  load: async () => structuredClone(readStrategy()),
+  load: async () => { const current = readStrategy(); return { ...current, data: parseStrategy(current.data) }; },
   save: async (data, revision) => { const current = readStrategy(); if (revision !== current.revision) throw new RevisionConflictError('Druga osoba zmieniła strategię.'); const next = { data: parseStrategy(data), revision: revision + 1 }; localStorage.setItem(strategyKey, JSON.stringify(next)); return next; },
   subscribe: change => { const callback = (event: StorageEvent) => { if (event.key === strategyKey) change(); }; window.addEventListener('storage', callback); return () => window.removeEventListener('storage', callback); },
 };

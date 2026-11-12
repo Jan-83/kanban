@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StrategyData, StrategyRepository, StrategySnapshot } from '../types/strategy';
-import { AccessDeniedError, RevisionConflictError } from '../utils/supabase';
+import { AccessDeniedError, RevisionConflictError } from '../utils/api';
 import { parseStrategy } from '../utils/strategy';
 
 export function useStrategyBoard(repository: StrategyRepository, onAccessLost: () => void) {

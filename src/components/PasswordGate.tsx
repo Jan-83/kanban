@@ -60,7 +60,7 @@ export function PasswordGate({ auth, message = '', onAuthenticated, onCancel }: 
       <span className="auth-lock">{secondFactor ? <ShieldCheck size={22}/> : <LockKeyhole size={22}/>}</span>
       <p className="eyebrow">WSPÓLNA PRZESTRZEŃ PRACY</p>
       <h1>{title}</h1>
-      <p className="auth-description">{codes.length ? 'Każdy kod działa jeden raz. Zachowaj je w menedżerze haseł lub w innym bezpiecznym miejscu — pozwolą wejść po utracie telefonu.' : resetInfo ? 'Użyj co najmniej 14 znaków. Po zmianie hasła nadal obowiązuje drugi składnik.' : reset ? 'Wyślemy link na adres Twojego konta.' : auth.state === 'setup' ? 'Dodaj konto do aplikacji uwierzytelniającej, np. Microsoft Authenticator, Google Authenticator lub 1Password.' : auth.state === 'challenge' ? 'Wpisz kod z aplikacji uwierzytelniającej albo jeden z kodów awaryjnych.' : 'Zaloguj się, aby przejść do tablicy zespołu.'}</p>
+      <p className="auth-description">{codes.length ? 'Każdy kod działa jeden raz. Zachowaj je w menedżerze haseł lub w innym bezpiecznym miejscu — pozwolą wejść po utracie telefonu.' : resetInfo ? 'Użyj co najmniej 14 znaków. Po zmianie hasła nadal obowiązuje drugi składnik.' : reset ? 'Wyślemy link na adres Twojego konta.' : auth.state === 'setup' ? 'Dodaj konto do aplikacji uwierzytelniającej, np. Microsoft Authenticator, Google Authenticator lub 1Password.' : auth.state === 'challenge' ? 'Wpisz kod z aplikacji uwierzytelniającej albo jeden z kodów awaryjnych.' : 'Zaloguj się do CRM i tablic zespołu.'}</p>
       {(error || message) && <p className="notice error" role="alert">{error || message}</p>}
       {notice && <p className="notice" role="status">{notice}</p>}
       {codes.length ? <div className="form-stack">

@@ -20,7 +20,7 @@ class BackupKanban extends Command
         if ($this->option('verify')) {
             $path = realpath($this->option('verify'));
             $data = $path ? $backups->read($path) : null;
-            if (! in_array($data['format'] ?? null, ['intelispaces-team-backup-v1', 'intelispaces-team-backup-v2'], true)) {
+            if (! in_array($data['format'] ?? null, ['intelispaces-team-backup-v1', 'intelispaces-team-backup-v2', 'intelispaces-team-backup-v3'], true)) {
                 throw new \RuntimeException('Invalid backup.');
             }
             foreach ($data['images'] as $image) {
@@ -32,7 +32,7 @@ class BackupKanban extends Command
             foreach ($data['tables']['documents'] as $document) {
                 json_decode(Crypt::decryptString($document['ciphertext']), true, 512, JSON_THROW_ON_ERROR);
             }
-            $this->info(json_encode(['verified' => true, 'images' => count($data['images']), 'documents' => count($data['tables']['documents'])]));
+            $this->info(json_encode(['verified' => true, 'images' => count($data['images']), 'documents' => count($data['tables']['documents']), 'crm_records' => count($data['tables']['crm_records']), 'crm_files' => count($data['files'])]));
 
             return self::SUCCESS;
         }
@@ -60,7 +60,16 @@ class BackupKanban extends Command
                 $images[] = ['id' => $image['id'], 'sha256' => $image['sha256']];
             }
 
-            return ['format' => 'intelispaces-team-backup-v2', 'created_at' => now()->toISOString(), 'tables' => $tables, 'images' => $images];
+            $files = [];
+            foreach ($tables['crm_files'] as $file) {
+                $bytes = Crypt::decryptString(Storage::disk('local')->get('crm-files/'.$file['id'].'.bin'));
+                if (! hash_equals($file['sha256'], hash('sha256', $bytes))) {
+                    throw new \RuntimeException('CRM source file integrity check failed.');
+                }
+                $files[] = ['id' => $file['id'], 'sha256' => $file['sha256']];
+            }
+
+            return ['format' => 'intelispaces-team-backup-v3', 'created_at' => now()->toISOString(), 'tables' => $tables, 'images' => $images, 'files' => $files];
         });
         $path = $directory.'/team-'.now()->format('Ymd-His').'-'.bin2hex(random_bytes(4)).'.enc';
         $temporary = $path.'.partial';
@@ -70,6 +79,13 @@ class BackupKanban extends Command
         }
         try {
             $zip->addFromString('manifest.enc', Crypt::encryptString(json_encode($snapshot, JSON_THROW_ON_ERROR)));
+            foreach ($snapshot['files'] as $file) {
+                $name = 'crm-files/'.$file['id'].'.bin';
+                if (! $zip->addFile(Storage::disk('local')->path($name), $name)) {
+                    throw new \RuntimeException('Cannot add encrypted CRM file.');
+                }
+                $zip->setCompressionName($name, ZipArchive::CM_STORE);
+            }
             foreach ($snapshot['images'] as $image) {
                 $name = 'images/'.$image['id'].'.bin';
                 if (! $zip->addFile(Storage::disk('local')->path($name), $name)) {

@@ -23,7 +23,7 @@ class RestoreKanban extends Command
             }
         }
         $disk = Storage::disk('local');
-        if ($disk->allFiles('images') !== []) {
+        if ($disk->allFiles('images') !== [] || $disk->allFiles('crm-files') !== []) {
             $this->error('Refusing to overwrite existing private images.');
 
             return self::FAILURE;
@@ -36,6 +36,13 @@ class RestoreKanban extends Command
                     $file = 'images/'.$image['id'].'.bin';
                     $written[] = $file;
                     $disk->put($file, $backups->imageCiphertext($this->argument('file'), $image));
+                }
+                foreach ($data['files'] as $file) {
+                    $name = 'crm-files/'.$file['id'].'.bin';
+                    $written[] = $name;
+                    if (! $disk->put($name, $backups->fileCiphertext($this->argument('file'), $file))) {
+                        throw new \RuntimeException('Cannot restore CRM file.');
+                    }
                 }
                 foreach (EncryptedBackup::TABLES as $table) {
                     foreach (array_chunk($data['tables'][$table], 25) as $rows) {
@@ -53,7 +60,7 @@ class RestoreKanban extends Command
             throw $error;
         }
         $this->info(json_encode(['restored' => true, 'users' => count($data['tables']['users']),
-            'documents' => count($data['tables']['documents']), 'images' => count($data['images'])]));
+            'documents' => count($data['tables']['documents']), 'images' => count($data['images']), 'crm_records' => count($data['tables']['crm_records']), 'crm_files' => count($data['files'])]));
 
         return self::SUCCESS;
     }

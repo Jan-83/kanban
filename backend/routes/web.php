@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BoardController;
+use App\Http\Controllers\CrmController;
+use App\Http\Controllers\CrmFileController;
 use App\Http\Controllers\ImageController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +19,20 @@ Route::prefix('api')->group(function (): void {
         Route::post('/mfa/confirm', [AuthController::class, 'confirmSetup'])->middleware('throttle:mfa')->block();
         Route::post('/mfa/challenge', [AuthController::class, 'challenge'])->middleware('throttle:mfa')->block();
         Route::middleware('mfa')->prefix('/boards/{board}')->whereUuid('board')->group(function (): void {
+            Route::prefix('crm')->middleware('throttle:120,1')->group(function (): void {
+                Route::get('/', [CrmController::class, 'index']);
+                Route::post('/records', [CrmController::class, 'store'])->block();
+                Route::get('/records/{record}', [CrmController::class, 'show'])->whereUuid('record');
+                Route::put('/records/{record}', [CrmController::class, 'update'])->whereUuid('record')->block();
+                Route::delete('/records/{record}', [CrmController::class, 'destroy'])->whereUuid('record')->block();
+                Route::post('/records/{record}/version', [CrmController::class, 'version'])->whereUuid('record')->block();
+                Route::post('/records/{record}/task', [CrmController::class, 'task'])->whereUuid('record')->block();
+                Route::put('/settings', [CrmController::class, 'settings'])->block();
+                Route::post('/notifications/read', [CrmController::class, 'notifications'])->block();
+                Route::post('/records/{record}/files', [CrmFileController::class, 'store'])->whereUuid('record')->middleware('throttle:uploads')->block();
+                Route::get('/files/{file}', [CrmFileController::class, 'show'])->whereUuid('file');
+                Route::delete('/files/{file}', [CrmFileController::class, 'destroy'])->whereUuid('file')->block();
+            });
             Route::get('/images/content', [ImageController::class, 'show']);
             Route::post('/images', [ImageController::class, 'store'])->middleware('throttle:uploads')->block();
             Route::post('/images/copy', [ImageController::class, 'copy'])->middleware('throttle:uploads')->block();

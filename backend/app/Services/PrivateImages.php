@@ -35,7 +35,7 @@ class PrivateImages
 
                 return $this->metadata($existing);
             }
-            abort_if(DB::table('private_images')->where('board_id', $board)->sum('bytes') + strlen($bytes) > config('team.file_quota_bytes'), 422, 'Magazyn zdjęć osiągnął limit. Skontaktuj się z administratorem.');
+            abort_if(DB::table('private_images')->where('board_id', $board)->sum('bytes') + DB::table('crm_files')->where('board_id', $board)->sum('bytes') + strlen($bytes) > config('team.file_quota_bytes'), 422, 'Magazyn zdjęć osiągnął limit. Skontaktuj się z administratorem.');
             $disk = Storage::disk('local');
             $file = 'images/'.$id.'.bin';
             if ($disk->exists($file)) {

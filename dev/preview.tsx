@@ -2,7 +2,7 @@
 import { createRoot } from 'react-dom/client';
 import { Workspace, type BoardRepository } from '../src/components/Workspace';
 import { emptyBoard, parseBoard } from '../src/utils/board';
-import { RevisionConflictError } from '../src/utils/supabase';
+import { RevisionConflictError } from '../src/utils/api';
 import type { BoardData, TaskImage } from '../src/types/kanban';
 import type { TaskImageRepository } from '../src/utils/taskImages';
 import type { StrategyRepository } from '../src/types/strategy';

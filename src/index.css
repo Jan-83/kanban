@@ -326,3 +326,10 @@ input[type=checkbox] { accent-color: var(--accent); }
   .dialog-actions { flex-wrap: wrap; }
   .dialog-actions .button { padding: 7px 9px; }
 }
+
+.mfa-enrollment { display:grid; gap:14px; justify-items:center; margin:20px 0; font-size:13px; }
+.mfa-enrollment img { max-width:100%; background:white; border-radius:8px; }
+.mfa-enrollment code { overflow-wrap:anywhere; display:block; margin-top:10px; user-select:all; }
+.recovery-codes { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:14px;background:var(--surface-subtle);border-radius:8px; }
+.recovery-codes code {font-size:12px;user-select:all;}
+.security-check {display:flex!important;align-items:center;gap:10px;}

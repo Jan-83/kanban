@@ -1,94 +1,51 @@
-# Delitech Kanban
-React + TypeScript on GitHub Pages, with shared board data and authentication in Supabase.
+# InteliSpaces Team / Kanban
 
-## Local development
-Use Node.js 24. Run `npm ci --legacy-peer-deps`, then `npm run dev`.
-`npm run lint`, `npm test` and `npm run build` are the deployment checks.
-A separate development-only entry at `/dev/preview.html` contains synthetic data for visual and drag-and-drop testing. It is not included in the production build and never grants database access.
+Production: https://team.intelispaces.pl/. React and TypeScript are served by a same-origin Laravel 13 API on cyber_Folks, with a dedicated MariaDB database. Authentication, task documents and original photos no longer require Supabase. The legacy GitHub Pages workflow publishes a fixed redirect only.
 
-## Authentication and data access
-There are no embedded account passwords or master codes. The production entry always verifies the Supabase user and protected membership before mounting the workspace. Old local auth/session records are removed.
+## Signing in
 
-`src/config.public.json` contains only the project's public API URL, publishable key and board ID. These identifiers are deliberately public; the database protects data independently. A separate deployment can override them with the three variables in `.env.example`. Never use a secret or service-role key in the frontend.
+Existing confirmed accounts keep their existing password. Every account must enroll an authenticator at its first sign-in, confirm a six-digit code, and save the ten recovery codes. Each recovery code works once. A password alone never grants access to a board or photo. Password reset preserves MFA and revokes existing sessions. An account that was invited but never activated can use the password-reset form to establish its password through its own mailbox.
 
-The migration in `supabase/migrations` creates:
-- `kanban_boards`: board data with revision numbers;
-- `kanban_members`: authoritative user-to-board grants, readable only by the relevant user;
-- `save_kanban_board`: the only browser write route, checking authenticated membership and the expected revision in one transaction.
+There is no public registration. Board access is determined by the server's membership records. Editable names and roles in the project roster are labels; they cannot grant account access. Provisioning, revocation and MFA recovery require a trusted server administrator and independent identity verification. Never reset MFA merely because someone knows an email address or password.
 
-Anonymous access, direct table updates and browser changes to membership are denied. Any authorized member can edit board content; the editable roster and role labels inside that content never confer login rights. A changed browser role cannot grant access. The RPC's SECURITY DEFINER advisory is expected: its entry checks auth.uid() and membership, it has an empty search_path and its EXECUTE grant excludes anonymous users.
+## Security boundaries
 
-## Initial setup and inviting people
-1. Apply the migration to the intended Supabase project and create a board.
-2. In Supabase Authentication → URL Configuration, set the deployed app URL, including its GitHub Pages subdirectory. Add only the exact production/preview redirect URLs you use.
-3. Disable public signups and anonymous sign-in in Authentication → Sign In / Providers. Configure the password minimum to 12 characters. Membership RLS still denies outsiders independently of signup settings.
-4. Invite a user through Authentication → Users. They set their own password. Set a sufficiently long invite expiry for onboarding only if needed; do not publish invite links.
-5. After the user row exists, grant board membership in the trusted SQL editor. Example (replace the placeholders, use an exact auth.users email):
+- HTTPS and HSTS; host-only Secure, HttpOnly, SameSite=Strict cookies; encrypted database sessions, with 30-minute inactivity and eight-hour absolute limits.
+- CSRF and origin validation, server-side membership checks on every board/photo request, login and MFA throttling, single-use TOTP time steps and hashed recovery codes.
+- Application-level authenticated encryption for board documents, revisions, original photo files and MFA secrets. Passwords use bcrypt. The application key and database/mail credentials remain in the private server environment, outside source control and release archives.
+- Images are immutable, MIME/content checked and size limited, and require an authenticated, MFA-verified member to download. Public signed image URLs are not used. Photos removed from a card remain in encrypted storage to avoid losing originals.
+- A restrictive CSP, no external fonts or analytics, no public database connection, no debug output, and no indexing. Authentication/security events are recorded without task content or passwords.
 
-```sql
-insert into public.kanban_members (board_id, user_id, display_name, role)
-select '<board-uuid>'::uuid, id, 'Display name', 'admin'
-from auth.users where email = '<invited-email>';
-```
+The dedicated domain has cyber_Folks PHP separation enabled. This is shared hosting under the hosting account, not a separate operating-system security boundary. The hosting administrator and a compromised account with the application key remain privileged. Keep hosting access, the workstation and recovery material protected, and maintain framework/dependency updates.
 
-Use role `member` for teammates. Revoke access by deleting the corresponding `kanban_members` row. No browser account can edit these grants, including an app admin. Deleting someone from the editable project roster only unassigns their tasks; it does not revoke access.
+## Development and verification
 
-Default Supabase email sending has restrictions. If invitations or password reset emails are blocked, configure a transactional SMTP provider in the dashboard; never place SMTP credentials in this repository.
+Use Node.js 24, PHP 8.4 with PDO SQLite/MySQL, mbstring, GD and ZIP, and Composer. Run `npm ci --legacy-peer-deps`, `npm run lint`, `npm test`, and `npm run build`. In `backend`, install Composer dependencies, copy `.env.example` to a private `.env`, generate a unique key and migrate a local SQLite database. For local HTTP only, set `APP_ENV=local`, a localhost APP_URL, `SESSION_SECURE_COOKIE=false`, and a cookie name without the `__Host-` prefix.
 
-## Existing data
-Old tasks stay in their browser storage until explicitly imported. On the same origin/browser, the first admin can use Eksport → Importuj lokalne zadania while the cloud board is empty. Only tasks, roster and stages are accepted; old credentials and permissions are not imported. A fork/preview uses a different origin, so it cannot read local data from the original GitHub Pages address.
+Copy the built `dist/index.html` to `backend/public/spa.html`, and the `dist/assets` and `dist/fonts` directories to `backend/public`. Serve Laravel on localhost. `/dev/preview.html` through Vite is an isolated synthetic-data UI preview, excluded from the production build. Never use production data or credentials in a public preview.
 
-## Shared strategic board
-The **TABLICA STRATEGICZNA** button opens one shared canvas for the existing board members. Its first opening creates six editable root cards (Mieszkanie, Dom, Willa, Małe biuro, Mały budynek biurowy, Większe biuro), their planning cards, and a nested lighting example. There are no enclosing segment frames.
-
-Click a card to use the existing task editor: rich text, photos, several responsible people, priority, tags, checklist, timestamped status comments and closing status. Add children with **+**, choose a parent in the editor, or drag a connector from the bottom of a parent to the left of a child. Descendants cannot become their own ancestors. Deleting a card preserves its children and attaches them to its former parent.
-
-Drag a card by its top bar, or Shift-drag a selection on the canvas to move a group. **Przesuwaj kartę razem z podkartami** includes the complete branch. Drag the background to pan, use the wheel/pinch to zoom, **Cała tablica** to fit, and the fullscreen button for more room. Each card can have a color; the editor can apply that color to all its descendants. Positions, links and content are shared; zoom and collapsed branches are personal view state. **Ułóż gałęzie** changes shared positions after confirmation. The download icon exports strategy JSON, separate from the original Kanban export.
-
-Each card can connect to **multiple parent cards**, with one shared description and checklist. Draw another connection, or use **Podepnij pod karty** in the editor (search, checkboxes and removable chips). Select a line and click **Usuń połączenie** to remove only that link. Loops and duplicate connections are rejected. Folding a branch leaves a shared card visible if another open branch reaches it. Group dragging moves shared descendants once; deleting a parent preserves its children, other links and inherited parents.
-
-**Kopiuj kartę** is available on each strategic card and in the toolbar after selection. The dialog can copy just the card or its entire descendant graph, optionally keeping the root's existing parent links. The default is an independent root. Shared descendants are duplicated only once, with connections inside the copied graph; other external connections of descendants are excluded. Content, HTML, colors, assignments, due dates, status, completed steps and comment history are preserved. Task, step, comment and photo IDs are new; external GitHub issue bindings are omitted. Copies appear in free space on the right and the view focuses the copied root. Private photos are copied to their own storage paths before the cards are saved atomically. A failed photo copy leaves existing cards intact, and retrying an uncertain board save reuses stable card IDs to prevent duplicates. Unreferenced uploads after an interrupted or cancelled copy follow the existing immutable-photo retention policy; never delete original photos as cleanup.
-
-Apply `20261025204207_kanban_strategy_board.sql` and then `20261025220431_strategy_multiple_parents.sql` before deploying. Strategy lives in `kanban_strategy_boards`, separate from the existing tasks. The new migration changes validation only, without rewriting live data. The client reads legacy version 1 (`parentId`) as version 2 (`parentIds`), preserving tasks and coordinates. The first successful CAS save upgrades that board; the database then rejects downgrades from old tabs. Refresh both teammates' tabs after release. Membership RLS protects reads/writes, and compare-and-swap revisions protect concurrent changes. Realtime notifications and a 10-second polling fallback refresh other windows. Connection operations rebase only their own additions/removals; an edit to already changed task content is rejected while keeping the local draft open. Only confirmed writes show as saved. Limits: 1,000 cards and 2 MB of strategy JSON; photos remain in private Storage.
-
-Before publication, back up source/Git history, both board JSON documents, membership rows, and attached photo files. After a board is saved in version 2, use a frontend that understands `parentIds` for any rollback: older single-parent clients cannot read that format. Keep the database downgrade guard, and never flatten multiple links or restore old live data as a code rollback. The development preview uses synthetic tasks and a localStorage strategy repository for two-window checks and never writes to the production database.
-
-## Collaboration
-Changes use revision compare-and-swap. If another person saves first, the stale write is rejected, the current board is loaded, and the user can retry; a task form remains open with its draft. The board refreshes every 15 seconds and on window focus. A failed write rolls back locally and shows an error; unsaved changes are not presented as a successful save.
-
-Custom stages are inserted before Zrobione. The built-in `done` stage is the completion stage used by deadline calculations. Drag by the grip with a mouse or long press on touch; space, arrows and space support keyboard movement. Every card also has a stage selector. Card ordering is stored in the task array and preserved when filters are active.
-
-Stages can also be dragged by their heading grip, including Zrobione. Moving a stage changes only its position, never its task statuses. The heading menu offers eight colors and left/right buttons as an alternative to dragging. Stage order and colors are saved through the same revision-protected board write as tasks.
-
-Every stage's heading menu also offers **Nazwa etapu** and **Zmień** (or Enter). Names must be unique ignoring case and outer whitespace, with 1–48 characters. Built-in and custom stages can be renamed; their IDs, task links, completion meaning, order and colors stay unchanged. Opening the menu loads the current name. A concurrent rename is rejected without overwriting another person's change; reopen the menu to retry against the latest name.
-
-The header's sun/moon buttons select a white or dark gray appearance. This is a per-browser preference (`kanban-theme` in local storage), independent of shared board data. Compact cards retain assignment, stage selection and checklist progress; opening a card shows its full title and description.
-
-CSV, Markdown and full JSON exports include custom stages. Export is explicit and local; there is no simulated GitHub sync.
-
-## Responsible people and description height
-The task form supports several **Osoby odpowiedzialne**. Existing single-person assignments keep their values; edited tasks store `assigneeIds` plus the first selected person's ID in the legacy `assigneeId` field. Cards and the list offer a checkbox picker; **Zastosuj osoby** saves the selection. Person filters, the team counts, deadlines and CSV/Markdown/JSON exports include all selected people. Removing someone from the team leaves other responsible people assigned.
-
-Plain descriptions expand automatically to fit the content, up to five times the original three-line field height, then scroll internally. Formatted descriptions expand to a maximum of 625 px (five times their former 125 px limit). The larger HTML editor remains available.
-
-## Task colors
-In the task form, **Kolor zadania** selects an optional border color from eight swatches or a custom color picker. **Domyślny** removes it. Save the task to share the choice with the board; it survives reloads, task moves, assignment and full JSON export/import. The chosen border also appears while dragging. Deadline backgrounds and date warnings remain visible independently of the custom border.
-
-## Task status notes
-Below the checklist, **KOMENTARZ O STATUSIE** keeps separate entries with author and timestamp (displayed in Europe/Warsaw). Add entries with the button or Ctrl+Enter, then save the task; saving also includes any comment still in the composer. **STATUS ZAMKNIĘCIA** stores the work that justified completion. These fields use the existing shared board and revision checks, and survive task moves, assignments and JSON export/import. Older tasks start with empty fields. Both sections support the white and dark gray appearance.
+Backend checks: `php artisan test --compact` and `php vendor/bin/pint --dirty --format agent`. The feature suite covers authorization, MFA enrollment/replay/recovery, session expiry and revocation, CSRF/origin, optimistic concurrency, task round trips, private files, and encrypted backup/restore. Historical Supabase regression tests remain as documentation of the migrated data contract; no Supabase client is included in the production application bundle.
 
 ## Deployment
 
-### Formatted descriptions and task photos
-In a task, **Powiększ / formatuj** opens a larger description editor with a formatting toolbar, HTML source and preview. Only safe text formatting and links are retained; scripts, embedded frames and remote images are removed. The plain description remains available to search, compact cards and CSV/Markdown exports. Full JSON exports retain HTML and photo metadata.
+`scripts/package-team.py --output <new-private-build-directory> --composer <composer.phar>` builds a production archive from the checked frontend and an explicit backend allowlist. It installs locked production dependencies and excludes environments, databases, uploads, tests and development tools. Verify the resulting SHA-256 before upload.
 
-**Dodaj zdjęcia** accepts up to 12 JPG, PNG or WebP files per task, each at most 5 MiB. Selected files upload to a private Supabase Storage bucket; saving the task links them to the shared board. Cancelling keeps the board unchanged. Thumbnail buttons on both the task form and board cards open a larger viewer with previous/next controls and arrow-key navigation. Cards show the first four images and a count for the rest.
+`scripts/deploy-team.py` is a guarded first-install tool for the dedicated team domain and empty application directory. It deliberately refuses an existing installation. Updates must preserve `.env`, database contents and `storage`, retain the previous code release, and run package discovery, configuration/route caching and any reviewed forward migrations. Never run `migrate:fresh` on a live board.
 
-Apply `20261006214032_task_images.sql` to the configured Supabase project before deploying this feature. It creates the private `kanban-task-images` bucket with MIME/size limits and read/insert policies checked against the existing protected board membership. Download links are temporary and are refreshed while the workspace is open. Removing a photo from a task unlinks its metadata; originals are retained, and browser users cannot overwrite or delete storage objects. Board edits retain the existing revision checks. A JSON import to another Supabase project requires separately copying the image files.
+The web root exposes only the gateway and public assets. The private `app` subtree is denied at both the root and subtree by Apache rules; directory listing and dotfile access are blocked. Keep these rules when changing hosting settings. Use a dedicated database user and SMTP identity, with debug disabled. The Let's Encrypt domain certificate is renewed by the existing acme.sh scheduler.
 
-Enable GitHub Pages with GitHub Actions as its source. The deployment workflow uses the same checked source and public config; it does not apply migrations or create accounts. Merge the reviewed change only after the backend and first account are ready. The previous site remains vulnerable until the new frontend is actually deployed.
+## Migration and recovery
 
-Keep `package-lock.json` committed: both the dependency cache and `npm ci` require it. Use Node.js 24 for the same toolchain as CI.
+`php artisan team:import <private-export-directory>` imports into an empty destination only. It verifies original image checksums, preserves user IDs and supported password hashes, authoritative memberships, Kanban and strategy JSON and revisions, and verifies imported documents. The extra historical `calendar_events` rows are retained verbatim as an encrypted `calendar_archive` document; neither current source frontend exposes that old standalone table. The calendar deadline view continues to derive its data from tasks.
 
-Rollback the frontend by redeploying its previous commit only with awareness that the old auth was client-side. The new database does not expose old credentials and is independent of the old local storage; preserve it when troubleshooting.
+Before cutover, freeze source writes, save source permissions for rollback, take a final consistent export, import and verify, then disable old application access and publish redirects. Keep the source snapshot as a private rollback archive; do not make both backends writable. The temporary photo-transfer endpoint must remain disabled after copying.
 
+`php artisan team:backup` produces an encrypted archive and verifies every original photo checksum and document decryption before finalizing it. Photo ciphertext is streamed into the archive rather than loading all attachments into memory. The encrypted manifest contains accounts, memberships, documents, history and audit events; session cookies and password-reset tokens are excluded. Run the scheduler every minute with PHP 8.4 and 512 MB CLI memory; backups run daily at 02:20 Europe/Warsaw. Successfully verified backups older than 14 days are rotated only after a new verified copy exists. Review the private backup log for failures.
+
+`php artisan team:backup --verify=<file>` checks an archive. `php artisan team:restore <file>` restores only to an empty migrated database and empty photo storage, and invalidates sessions. Restore requires the corresponding APP_KEY. Keep an encrypted backup off the hosting account and preserve the key separately in protected administrator storage. A same-server backup alone does not protect against loss of the hosting account. Regularly test a restore in an isolated environment. Restore data only for disaster recovery; a code rollback must preserve newer live edits.
+
+## Working with boards
+
+Kanban stages, multiple responsible people, rich text, photos, comments, checklists, colors and exports retain their existing behavior. The deadline view reads task dates. Strategy cards support multiple parent connections, independent branch copying, editable tasks, colors and drag positioning. Deleting a parent preserves its children; cycle validation rejects loops.
+
+Board saves use revision compare-and-swap. A concurrent change is rejected rather than overwriting someone else's edit; drafts stay available for retry. Polling refreshes shared data, while background refreshes alone do not keep an idle login alive. Theme, zoom and collapsed branches are local view preferences. Exports are explicit downloads and may contain important data; store them with appropriate access controls.

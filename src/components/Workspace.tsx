@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Check, Cloud, LoaderCircle, RefreshCw, X } from 'lucide-react';
 import type { ActiveTab, BoardData, BoardSnapshot, BoardUser, Task } from '../types/kanban';
 import { addStage, assertDraftCurrent, assignTask, generateNextTaskId, moveStage, moveTask, parseBoard, readLegacyBoard, removeMember, renameStage, setStageColor } from '../utils/board';
-import { AccessDeniedError, RevisionConflictError, loadBoard, saveBoard } from '../utils/supabase';
+import { AccessDeniedError, RevisionConflictError, loadBoard, saveBoard } from '../utils/api';
 import { evaluateDueDate } from '../utils/dateUtils';
 import { Navbar } from './Navbar';
 import { KanbanBoard } from './KanbanBoard';

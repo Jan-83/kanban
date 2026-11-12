@@ -14,8 +14,24 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+      - run: npm ci --legacy-peer-deps
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3, gd, zip
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+        working-directory: backend
+      - run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+          cp ../dist/index.html public/spa.html
+          cp -R ../dist/assets ../dist/fonts public/
+          php artisan test --compact
+          php vendor/bin/pint --format agent
+          git diff --exit-code -- '*.php'
+        working-directory: backend
 

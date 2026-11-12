@@ -1,4 +1,4 @@
-# InteliSpaces Team / Kanban
+# InteliSpaces Team / CRM and Kanban
 
 Production: https://team.intelispaces.pl/. React and TypeScript are served by a same-origin Laravel 13 API on cyber_Folks, with a dedicated MariaDB database. Authentication, task documents and original photos no longer require Supabase. The legacy GitHub Pages workflow publishes a fixed redirect only.
 
@@ -49,3 +49,22 @@ Before cutover, freeze source writes, save source permissions for rollback, take
 Kanban stages, multiple responsible people, rich text, photos, comments, checklists, colors and exports retain their existing behavior. The deadline view reads task dates. Strategy cards support multiple parent connections, independent branch copying, editable tasks, colors and drag positioning. Deleting a parent preserves its children; cycle validation rejects loops.
 
 Board saves use revision compare-and-swap. A concurrent change is rejected rather than overwriting someone else's edit; drafts stay available for retry. Polling refreshes shared data, while background refreshes alone do not keep an idle login alive. Theme, zoom and collapsed branches are local view preferences. Exports are explicit downloads and may contain important data; store them with appropriate access controls.
+
+
+## CRM workspace
+
+The authenticated landing screen is the CRM; its sidebar switches to Kanban and strategy without a second login. It includes companies, contacts, editable categories/tags, a configurable sales pipeline, investments and their participants, contact history, follow-up tasks, a calendar, versioned offers, private PDF/images, lead sources, sales reports, automation rules and after-sales records. Subiekt integration and spreadsheet/CSV importing are intentionally excluded.
+
+Records have an owner and team or restricted visibility. Access is also constrained by every parent record; only the owner or an authoritative administrator may change sharing or archive the record. Team editors can update permitted content. Every write uses a record revision, stores encrypted history and validates related-record membership. Administrators can configure stages and automation rules. Shared Kanban roster roles do not grant CRM access.
+
+Outlook correspondence is linked explicitly using HTTPS message links on Microsoft Outlook domains. The app neither holds Microsoft mailbox credentials nor automatically reads/sends email. The authenticated user opens the original message in their own Microsoft account. CRM notes can hold the agreed summary.
+
+Attachments are authenticated downloads (PDF, JPEG, PNG or WebP, maximum 5 MiB), encrypted outside the public directory with integrity checks. The existing 1 GiB board quota now includes both Kanban images and CRM documents. Archived records and files remain available in encrypted backup/history; archiving a parent also hides its descendants from normal views.
+
+Offers keep separate numbered versions and per-version PDFs. Reports separate currencies and derive conversion only from won/lost deals; the weighted forecast uses configured stage probabilities. No currency conversion or invented demo revenue is displayed in production. CRM follow-ups can link an existing Kanban task or create a generic shared task; client titles, dates and private notes are not copied into the shared board. The two records retain their own statuses.
+
+The existing minute scheduler runs team:crm-reminders every five minutes. It generates private in-app notices for due work and executes configured inactivity rules. Offer-sent and stage-change rules run in the same transaction as their triggering record update. Unique event keys prevent duplicate tasks/notices on repeated scheduler runs. Notifications are filtered by current record permissions, and recipients must be active members with access. These automations do not send client mail.
+
+Backups use format v3 and include CRM records, revisions, settings, notices, automation deduplication keys and all encrypted attachments. The reader also accepts legacy v1/v2 backups. Restore still requires an empty destination, does not restore sessions, and verifies bytes before committing. A code rollback must retain the additive CRM tables and newer data.
+
+For browser QA only, php artisan db:seed --class=CrmDemoSeeder creates explicitly fictitious data and a local test account. It refuses non-local environments, non-SQLite databases and nonempty user tables. The seeder is excluded from production release packages. The local UI visibly labels all data as synthetic.

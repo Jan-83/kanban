@@ -18,8 +18,8 @@ const StrategyBoard = lazy(() => import('./StrategyBoard').then(m => ({ default:
 
 export interface BoardRepository { load: (signal?: AbortSignal) => Promise<BoardSnapshot>; save: (data: BoardData, revision: number) => Promise<BoardSnapshot>; }
 const remote: BoardRepository = { load: loadBoard, save: saveBoard };
-interface Props { user: BoardUser; onLogout: () => void; onAccessLost: () => void; repository?: BoardRepository; imageRepository?: TaskImageRepository; strategyRepository?: StrategyRepository; }
-export function Workspace({ user, onLogout, onAccessLost, repository = remote, imageRepository = taskImageRepository, strategyRepository }: Props) {
+interface Props { onOpenCrm?: () => void; initialTab?: ActiveTab; initialTaskId?: string; user: BoardUser; onLogout: () => void; onAccessLost: () => void; repository?: BoardRepository; imageRepository?: TaskImageRepository; strategyRepository?: StrategyRepository; }
+export function Workspace({ user, onLogout, onAccessLost, repository = remote, imageRepository = taskImageRepository, strategyRepository, onOpenCrm, initialTab = 'board', initialTaskId }: Props) {
   const [snapshot, setSnapshot] = useState<BoardSnapshot | null>(null);
   const current = useRef<BoardSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
@@ -27,7 +27,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
   const alive = useRef(false);
   const generation = useRef(0);
   const [message, setMessage] = useState('');
-  const [tab, setTab] = useState<ActiveTab>('board');
+  const [tab, setTab] = useState<ActiveTab>(initialTab);
   const [strategyBusy, setStrategyBusy] = useState(false);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
@@ -86,6 +86,15 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
       if (alive.current) setBusy(false);
     }
   };
+  const targetOpened = useRef(false);
+  useEffect(() => {
+    if (snapshot && initialTaskId && !targetOpened.current) {
+      targetOpened.current = true;
+      const task = snapshot.data.tasks.find(item => item.id === initialTaskId);
+      if (task) { setEditing(task); setModal(true); }
+      else setMessage('Powiązane zadanie nie istnieje już na tablicy.');
+    }
+  }, [snapshot, initialTaskId]);
   const newTask = (stage = 'todo') => { setEditing(null); setDefaultStage(stage); setModal(true); };
   const edit = (task: Task) => { setEditing(task); setModal(true); };
   const saveTask = (draft: TaskDraft) => commit(data => {
@@ -122,7 +131,7 @@ export function Workspace({ user, onLogout, onAccessLost, repository = remote, i
   const completed = data?.tasks.filter(t => t.status === 'done').length ?? 0;
   const titles = { board: 'Tablica projektu', list: 'Wszystkie zadania', timeline: 'Terminy pod kontrolą', team: 'Ludzie i zadania', github: 'Eksport i kopie', strategy: 'Tablica strategiczna' };
   return <TaskImageProvider repository={imageRepository}><div className={'workspace' + (tab === 'strategy' ? ' strategy-workspace' : '')}>
-    <Navbar activeTab={tab} onTab={next => { if (!strategyBusy) setTab(next); }} user={user} onLogout={() => { if (!strategyBusy) onLogout(); }} onNew={() => newTask()} busy={busy || !data || strategyBusy} />
+    <Navbar onOpenCrm={onOpenCrm ? () => { if (!busy && !strategyBusy && !modal) onOpenCrm(); } : undefined} activeTab={tab} onTab={next => { if (!strategyBusy) setTab(next); }} user={user} onLogout={() => { if (!strategyBusy) onLogout(); }} onNew={() => newTask()} busy={busy || !data || strategyBusy} />
     <main className="workspace-main">
       {tab !== 'strategy' && <div className="page-heading"><h1>{titles[tab]}</h1><div className="heading-details"><div className="project-stats"><span><b>{(data?.tasks.length ?? 0) - completed}</b> aktywnych</span><span><b>{completed}</b> zrobionych</span>{overdue > 0 && <span className="overdue"><b>{overdue}</b> po terminie</span>}</div><span className="sync-status" role="status" title={'Ostatnie sprawdzenie: ' + new Date(clock).toLocaleTimeString('pl')} >{busy ? <><LoaderCircle size={13} className="spin" />Zapisywanie</> : data ? <><Check size={13} />Zapisano</> : <><Cloud size={13} />Wczytywanie</>}</span><button className="icon-button" aria-label="Odśwież tablicę" disabled={busy} onClick={() => { setMessage(''); void refresh(); }}><RefreshCw size={16} /></button></div></div>}
       {message && <div className="notice error workspace-notice" role="alert"><span>{message}</span><button className="icon-button" aria-label="Zamknij komunikat" onClick={() => setMessage('')}><X size={16} /></button></div>}

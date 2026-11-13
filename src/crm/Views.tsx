@@ -3,16 +3,17 @@ import { ArrowDownLeft, ArrowRight, ArrowUpRight, Building2, CalendarDays, Check
 import type { CrmKind, CrmRecord, CrmSnapshot } from './types';
 import { dateText, due, initials, hasRestrictedScope, kindLabels, labels, money, overdue, salesStats } from './model';
 export interface ViewProps { snapshot: CrmSnapshot; records: CrmRecord[]; currency: string; onOpen: (r: CrmRecord) => void; onNew: (kind: CrmKind, parentId?: string, day?: string) => void; onChange: (record: CrmRecord, data: Partial<CrmRecord['data']>) => Promise<void>; busy: boolean }
-export const recordIcons = { company: Building2, contact: Users, project: FolderKanban, deal: Target, activity: Mail, followup: CheckCircle2, event: CalendarDays, offer: FileText, service: Layers3, rule: Zap };
+export const recordIcons = { designer: Users, company: Building2, contact: Users, project: FolderKanban, deal: Target, activity: Mail, followup: CheckCircle2, event: CalendarDays, offer: FileText, service: Layers3, rule: Zap };
 export function Avatar({ name, small = false }: { name: string; small?: boolean }) { return <span className={'crm-avatar' + (small ? ' small' : '')}>{initials(name) || 'IS'}</span>; }
 export function Empty({ title, text, kind, onNew }: { title: string; text: string; kind?: CrmKind; onNew?: (kind: CrmKind) => void }) {
   return <div className="crm-empty"><div className="crm-empty-symbol"><Layers3 size={26} /></div><h3>{title}</h3><p>{text}</p>{kind && onNew && <button className="crm-btn crm-primary" onClick={() => onNew(kind)}><Plus size={16} />Dodaj pierwszy rekord</button>}</div>;
 }
 export function Status({ record, snapshot }: { record: CrmRecord; snapshot: CrmSnapshot }) {
   const stage = snapshot.settings.data.stages.find(s => s.id === record.data.stageId);
+  const category = record.kind === 'designer' ? snapshot.settings.data.designerCategories.find(c => c.id === record.data.categoryId) : undefined;
   const state = record.data.status || record.data.category || record.data.type;
   const positive = ['won', 'done', 'complete', 'accepted', 'closed'].includes(stage?.outcome || state || '');
-  return <span className={'crm-badge ' + (positive ? 'positive' : state === 'urgent' || state === 'rejected' ? 'negative' : '')}><i style={{ background: stage?.color }} />{stage?.title || labels[state || ''] || state || kindLabels[record.kind]}</span>;
+  return <span className={'crm-badge ' + (positive ? 'positive' : state === 'urgent' || state === 'rejected' ? 'negative' : '')}><i style={{ background: category?.color || stage?.color }} />{category?.title || stage?.title || labels[state || ''] || state || kindLabels[record.kind]}</span>;
 }
 export function RecordTable({ snapshot, records, onOpen, onNew, kind, onChange, busy }: ViewProps & { kind: CrmKind }) {
   const [page, setPage] = useState(0); const pageSize = 30; const actualPage = Math.min(page, Math.max(0, Math.ceil(records.length / pageSize) - 1));

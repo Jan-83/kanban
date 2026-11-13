@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Validator;
 
 class CrmSchema
 {
-    public const KINDS = ['company', 'contact', 'project', 'deal', 'activity', 'followup', 'event', 'offer', 'service', 'rule'];
+    public const KINDS = ['company', 'contact', 'designer', 'project', 'deal', 'activity', 'followup', 'event', 'offer', 'service', 'rule'];
 
     public function defaults(): array
     {
@@ -18,12 +18,27 @@ class CrmSchema
             ['id' => 'won', 'title' => 'Wygrana', 'probability' => 100, 'color' => '#2e9d79', 'outcome' => 'won'],
             ['id' => 'lost', 'title' => 'Przegrana', 'probability' => 0, 'color' => '#c77781', 'outcome' => 'lost'],
         ], 'categories' => ['Inwestor', 'Architekt', 'Projektant', 'Instalator', 'Integrator', 'Deweloper'],
-            'sources' => ['Polecenie', 'Strona internetowa', 'Telefon', 'E-mail', 'Targi', 'Partner', 'Kampania reklamowa']];
+            'sources' => ['Polecenie', 'Strona internetowa', 'Telefon', 'E-mail', 'Targi', 'Partner', 'Kampania reklamowa'],
+            'designerCategories' => [
+                ['id' => 'new', 'title' => 'Do poznania', 'color' => '#748094'],
+                ['id' => 'conversation', 'title' => 'W rozmowie', 'color' => '#7464dd'],
+                ['id' => 'potential', 'title' => 'Duży potencjał', 'color' => '#c18a29'],
+                ['id' => 'partner', 'title' => 'Współpraca', 'color' => '#27856d'],
+                ['id' => 'paused', 'title' => 'Wstrzymane', 'color' => '#b85b75'],
+            ],
+            'designerStrategies' => [
+                ['id' => 'first_contact', 'title' => 'Pierwszy kontakt', 'description' => 'Poznaj pracownię, typy projektów i potrzeby projektanta.'],
+                ['id' => 'showroom', 'title' => 'Zaproszenie do showroomu', 'description' => 'Zaproponuj spotkanie i pokaz rozwiązań na żywo.'],
+                ['id' => 'knx_presentation', 'title' => 'Prezentacja KNX', 'description' => 'Pokaż sceny, sterowanie i korzyści dla inwestora.'],
+                ['id' => 'project_support', 'title' => 'Wsparcie konkretnego projektu', 'description' => 'Pomóż dobrać rozwiązania do aktualnej inwestycji.'],
+                ['id' => 'partnership', 'title' => 'Oferta współpracy', 'description' => 'Ustal model współpracy i wzajemne oczekiwania.'],
+                ['id' => 'relationship', 'title' => 'Rozwijanie relacji', 'description' => 'Wracaj z inspiracjami, materiałami i wsparciem kolejnych realizacji.'],
+            ]];
     }
 
     public function settings(array $data): array
     {
-        $this->keys($data, ['stages', 'categories', 'sources']);
+        $this->keys($data, ['stages', 'categories', 'sources', 'designerCategories', 'designerStrategies']);
         $validated = Validator::make($data, [
             'stages' => ['required', 'array', 'min:3', 'max:16'], 'stages.*' => ['array:id,title,probability,color,outcome'],
             'stages.*.id' => ['required', 'string', 'regex:/^[a-z0-9_-]{1,40}$/D', 'distinct'],
@@ -31,6 +46,16 @@ class CrmSchema
             'stages.*.color' => ['required', 'regex:/^#[a-f0-9]{6}$/iD'], 'stages.*.outcome' => ['required', 'in:open,won,lost'],
             'categories' => ['required', 'array', 'max:60'], 'categories.*' => ['required', 'string', 'max:80', 'distinct'],
             'sources' => ['required', 'array', 'max:60'], 'sources.*' => ['required', 'string', 'max:80', 'distinct'],
+            'designerCategories' => ['required', 'array', 'list', 'min:1', 'max:16'],
+            'designerCategories.*' => ['required', 'array:id,title,color'],
+            'designerCategories.*.id' => ['required', 'string', 'regex:/^[a-z0-9_-]{1,40}$/D', 'distinct'],
+            'designerCategories.*.title' => ['required', 'string', 'max:60', 'distinct'],
+            'designerCategories.*.color' => ['required', 'regex:/^#[a-f0-9]{6}$/iD'],
+            'designerStrategies' => ['present', 'array', 'list', 'max:40'],
+            'designerStrategies.*' => ['required', 'array:id,title,description'],
+            'designerStrategies.*.id' => ['required', 'string', 'regex:/^[a-z0-9_-]{1,40}$/D', 'distinct'],
+            'designerStrategies.*.title' => ['required', 'string', 'max:80', 'distinct'],
+            'designerStrategies.*.description' => ['sometimes', 'nullable', 'string', 'max:500'],
         ])->validate();
         abort_unless(array_diff(['open', 'won', 'lost'], array_column($validated['stages'], 'outcome')) === [], 422, 'Potrzebne są etapy otwarty, wygrany i przegrany.');
         foreach ($validated['stages'] as &$stage) {
@@ -55,6 +80,10 @@ class CrmSchema
         $rules = ['title' => ['required', 'string', 'max:200'], 'notes' => ['sometimes', 'string', 'max:20000'],
             'tags' => ['sometimes', 'array', 'max:20'], 'tags.*' => ['required', 'string', 'max:60', 'distinct']];
         $specific = match ($kind) {
+            'designer' => ['categoryId' => ['required', 'string', 'in:'.implode(',', array_column($settings['designerCategories'], 'id'))],
+                'strategyId' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_column($settings['designerStrategies'], 'id'))],
+                'studio' => $text, 'specialization' => $text, 'email' => ['sometimes', 'string', 'email', 'max:254'], 'phone' => $short,
+                'address' => $text, 'city' => $short, 'website' => ['sometimes', 'string', 'url:https,http', 'max:500'], 'source' => $short],
             'company' => ['category' => $short, 'nip' => ['sometimes', 'string', 'max:24'], 'email' => ['sometimes', 'string', 'email', 'max:254'], 'phone' => $short,
                 'address' => $text, 'city' => $short, 'website' => ['sometimes', 'string', 'url:https,http', 'max:500'], 'industry' => $short, 'source' => $short],
             'contact' => ['category' => $short, 'jobTitle' => $short, 'email' => ['sometimes', 'string', 'email', 'max:254'], 'phone' => $short, 'source' => $short],

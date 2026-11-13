@@ -66,8 +66,9 @@ test('designer list shows three newest notes with their authors and keeps the co
     assert.deepEqual(previews.map(el => el.querySelector('.designer-note-excerpt')?.textContent), ['Termin spotkania <script>alert(1)</script>', 'Wysłane materiały', 'Uzgodniony zakres']);
     assert.deepEqual(previews.map(el => el.querySelector('[role="img"]')?.getAttribute('aria-label')), ['Autor: Anna Autorka', 'Autor: Jan Opiekun', 'Autor: Nieaktywny autor']);
     assert.equal(document.querySelectorAll('script').length, 0);
-    assert.ok(document.querySelector('details')?.textContent?.includes('Zakupy łącznie netto: 100,00 PLN'));
-    assert.equal(document.querySelector('details')?.hasAttribute('open'), false);
+    assert.ok(document.querySelector('tbody td:first-child')?.textContent?.includes('Zakupy łącznie netto: 100,00 PLN'));
+    assert.equal(document.querySelector('tbody td:nth-child(4)')?.textContent?.includes('Zakupy łącznie netto:'), false);
+    assert.equal(document.querySelector('details'), null);
   } finally {
     dom.window.close();
     Reflect.deleteProperty(globalThis, 'window');

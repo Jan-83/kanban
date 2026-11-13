@@ -82,6 +82,7 @@ class CrmSchema
         $specific = match ($kind) {
             'designer' => ['categoryId' => ['required', 'string', 'in:'.implode(',', array_column($settings['designerCategories'], 'id'))],
                 'strategyId' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_column($settings['designerStrategies'], 'id'))],
+                'tagColors' => ['sometimes', 'array', 'max:20'], 'tagColors.*' => ['required', 'regex:/^#[a-f0-9]{6}$/iD'],
                 'studio' => $text, 'specialization' => $text, 'email' => ['sometimes', 'string', 'email', 'max:254'], 'phone' => $short,
                 'address' => $text, 'city' => $short, 'website' => ['sometimes', 'string', 'url:https,http', 'max:500'], 'source' => $short],
             'company' => ['category' => $short, 'nip' => ['sometimes', 'string', 'max:24'], 'email' => ['sometimes', 'string', 'email', 'max:254'], 'phone' => $short,
@@ -117,6 +118,9 @@ class CrmSchema
         $this->keys($data, array_merge(array_keys($rules), array_keys($specific)));
 
         $validated = Validator::make($data, array_merge($rules, $specific))->validate();
+        if ($kind === 'designer') {
+            abort_unless(array_diff(array_keys($validated['tagColors'] ?? []), $validated['tags'] ?? []) === [], 422, 'Kolor można przypisać tylko do tagu projektanta.');
+        }
         if ($kind === 'rule' && $validated['trigger'] === 'stage_changed') {
             abort_unless(in_array($validated['stageId'] ?? '', array_column($settings['stages'], 'id'), true), 422, 'Wybierz etap wyzwalający regułę.');
         }

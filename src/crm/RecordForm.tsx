@@ -3,6 +3,7 @@ import { ArrowRight, Check, LockKeyhole, Plus, Trash2, X } from 'lucide-react';
 import type { BoardUser } from '../types/kanban';
 import type { CrmData, CrmInput, CrmKind, CrmRecord, CrmSettings, CrmSnapshot, Relationship } from './types';
 import { cleanData, defaultData, kindLabels, kindAccusative, labels } from './model';
+import { retainedTagColors } from './designerModel';
 
 type Field = { key: keyof CrmData; label: string; type?: 'text' | 'email' | 'url' | 'date' | 'datetime-local' | 'number' | 'money' | 'list'; options?: [string, string][]; required?: boolean; hint?: string };
 const options = (values: string[]) => values.map(value => [value, labels[value] || value] as [string, string]);
@@ -16,7 +17,7 @@ export function fields(kind: CrmKind, settings: CrmSettings, members: CrmSnapsho
   const reminder: Field = { key: 'reminderMinutes', label: 'Przypomnienie przed terminem', options: [['0', 'W chwili terminu'], ['15', '15 minut'], ['30', '30 minut'], ['60', 'Godzinę'], ['1440', 'Dzień']] };
   const type = (values: string[]): Field => ({ key: 'type', label: 'Rodzaj', options: options(values), required: true });
   switch (kind) {
-    case 'designer': return [{ key: 'studio', label: 'Pracownia / firma' }, { key: 'categoryId', label: 'Kategoria kolorystyczna', options: settings.designerCategories.map(c => [c.id, c.title]), required: true }, { key: 'strategyId', label: 'Strategia współpracy', options: settings.designerStrategies.map(s => [s.id, s.title]) }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefon' }, { key: 'city', label: 'Miasto' }, { key: 'address', label: 'Adres' }, { key: 'website', label: 'Strona internetowa', type: 'url' }, { key: 'specialization', label: 'Specjalizacja' }, source];
+    case 'designer': return [{ key: 'studio', label: 'Pracownia / firma' }, { key: 'categoryId', label: 'Status współpracy', options: settings.designerCategories.map(c => [c.id, c.title]), required: true }, { key: 'strategyId', label: 'Strategia współpracy', options: settings.designerStrategies.map(s => [s.id, s.title]) }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefon' }, { key: 'city', label: 'Miasto' }, { key: 'address', label: 'Adres' }, { key: 'website', label: 'Strona internetowa', type: 'url' }, { key: 'specialization', label: 'Specjalizacja' }, source];
     case 'company': return [category, { key: 'nip', label: 'NIP' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefon' }, { key: 'address', label: 'Adres' }, { key: 'city', label: 'Miasto' }, { key: 'website', label: 'Strona internetowa', type: 'url' }, { key: 'industry', label: 'Branża' }, source];
     case 'contact': return [category, { key: 'jobTitle', label: 'Stanowisko / rola' }, { key: 'email', label: 'E-mail', type: 'email' }, { key: 'phone', label: 'Telefon' }, source];
     case 'project': return [{ key: 'type', label: 'Typ obiektu', options: options(['Dom', 'Apartament', 'Biuro', 'Hotel', 'Obiekt komercyjny', 'Inny']) }, status(['planning', 'design', 'construction', 'installation', 'commissioning', 'complete']), { key: 'address', label: 'Adres inwestycji' }, { key: 'city', label: 'Miasto' }, ...moneyFields, { key: 'area', label: 'Powierzchnia (m²)', type: 'number' }, { key: 'systems', label: 'Systemy', type: 'list', hint: 'Np. KNX, JUNG HOME, AV — oddziel przecinkami.' }, { key: 'startDate', label: 'Początek', type: 'date' }, { key: 'dueDate', label: 'Planowane zakończenie', type: 'date' }];
@@ -46,6 +47,7 @@ export function RecordForm({ kind, record, parentId, day, snapshot, user, onSave
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); if (busy) return;
     const form = new FormData(event.currentTarget); const data: CrmData = { title: String(form.get('title')).trim(), notes: String(form.get('notes') || ''), tags: String(form.get('tags') || '').split(',').map(x => x.trim()).filter(Boolean) };
+    if (kind === 'designer') data.tagColors = retainedTagColors(initial, data.tags || []);
     for (const field of descriptors) {
       const raw = String(form.get(field.key) || '');
       if (raw === '') continue;

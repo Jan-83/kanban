@@ -2,7 +2,7 @@ export type CrmKind = 'company' | 'contact' | 'designer' | 'project' | 'deal' | 
 export type CrmView = 'overview' | 'pipeline' | 'designers' | 'companies' | 'contacts' | 'projects' | 'tasks' | 'calendar' | 'offers' | 'service' | 'reports' | 'automations' | 'settings';
 export interface Relationship { recordId: string; role: string }
 export interface CrmData {
-  studio?: string; specialization?: string; categoryId?: string; strategyId?: string | null;
+  studio?: string; specialization?: string; categoryId?: string; strategyId?: string | null; tagColors?: Record<string, string>;
   title: string; notes?: string; tags?: string[]; category?: string; nip?: string; email?: string; phone?: string;
   address?: string; city?: string; website?: string; industry?: string; source?: string; jobTitle?: string; type?: string;
   status?: string; valueCents?: number; currency?: string; area?: number; startDate?: string; dueDate?: string; systems?: string[];

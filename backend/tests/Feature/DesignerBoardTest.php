@@ -65,6 +65,40 @@ class DesignerBoardTest extends TestCase
         $this->assertSame('partner', app(CrmRecords::class)->details(self::BOARD, $created['id'], $user)['record']['data']['categoryId']);
     }
 
+    public function test_member_can_save_colored_tags_with_revision_history_and_restricted_access(): void
+    {
+        $owner = $this->member();
+        $other = $this->member();
+        $input = $this->input($owner, ['tags' => ['KNX', 'Historia zakupu'], 'tagColors' => ['KNX' => '#7c3aed', 'Historia zakupu' => '#16806a']]);
+        $created = $this->auth($owner)->postJson($this->path('/records'), $input)->assertCreated()->assertJsonPath('data.tagColors.KNX', '#7c3aed')->json();
+        $input['revision'] = 1;
+        $input['data']['tagColors']['KNX'] = '#123456';
+
+        $this->putJson($this->path('/records/'.$created['id']), $input)->assertOk()->assertJsonPath('revision', 2)->assertJsonPath('data.tagColors.KNX', '#123456');
+
+        $this->assertSame('#123456', app(CrmRecords::class)->details(self::BOARD, $created['id'], $owner)['record']['data']['tagColors']['KNX']);
+        $this->assertStringNotContainsString('#123456', DB::table('crm_records')->where('id', $created['id'])->value('ciphertext'));
+        $this->assertDatabaseCount('crm_versions', 1);
+        $this->putJson($this->path('/records/'.$created['id']), $input)->assertConflict();
+        $input['revision'] = 2;
+        $this->auth($other)->putJson($this->path('/records/'.$created['id']), $input)->assertNotFound();
+        $this->assertDatabaseCount('crm_versions', 1);
+    }
+
+    public function test_tag_colors_reject_css_invalid_values_and_unassigned_tags_without_writes(): void
+    {
+        $owner = $this->member();
+        $this->auth($owner);
+        foreach (['url(https://example.test)', '#12345', ['nested' => '#123456']] as $color) {
+            $input = $this->input($owner, ['tags' => ['KNX'], 'tagColors' => ['KNX' => $color]]);
+            $this->postJson($this->path('/records'), $input)->assertUnprocessable()->assertJsonValidationErrors('tagColors.KNX');
+        }
+        $input = $this->input($owner, ['tags' => ['KNX'], 'tagColors' => ['Automatyka' => '#123456']]);
+        $this->postJson($this->path('/records'), $input)->assertUnprocessable()->assertJsonPath('message', 'Kolor można przypisać tylko do tagu projektanta.');
+        $this->assertDatabaseCount('crm_records', 0);
+        $this->assertDatabaseCount('crm_versions', 0);
+    }
+
     public function test_invalid_category_strategy_url_and_payload_keys_return_422_without_records(): void
     {
         $user = $this->member();

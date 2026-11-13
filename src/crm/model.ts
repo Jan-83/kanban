@@ -1,6 +1,6 @@
 import type { CrmData, CrmInput, CrmKind, CrmRecord, CrmSettings } from './types';
-export const kindLabels: Record<CrmKind, string> = { company: 'Firma', contact: 'Kontakt', project: 'Inwestycja', deal: 'Szansa sprzedaży', activity: 'Aktywność', followup: 'Zadanie', event: 'Wydarzenie', offer: 'Oferta', service: 'Obsługa', rule: 'Automatyzacja' };
-export const kindAccusative: Record<CrmKind, string> = { company: 'firmę', contact: 'kontakt', project: 'inwestycję', deal: 'szansę sprzedaży', activity: 'aktywność', followup: 'zadanie', event: 'wydarzenie', offer: 'ofertę', service: 'zgłoszenie', rule: 'regułę' };
+export const kindLabels: Record<CrmKind, string> = { designer: 'Projektant', company: 'Firma', contact: 'Kontakt', project: 'Inwestycja', deal: 'Szansa sprzedaży', activity: 'Aktywność', followup: 'Zadanie', event: 'Wydarzenie', offer: 'Oferta', service: 'Obsługa', rule: 'Automatyzacja' };
+export const kindAccusative: Record<CrmKind, string> = { designer: 'projektanta', company: 'firmę', contact: 'kontakt', project: 'inwestycję', deal: 'szansę sprzedaży', activity: 'aktywność', followup: 'zadanie', event: 'wydarzenie', offer: 'ofertę', service: 'zgłoszenie', rule: 'regułę' };
 export const labels: Record<string, string> = {
   planning: 'Planowanie', design: 'Projektowanie', construction: 'Budowa', installation: 'Montaż', commissioning: 'Uruchomienie', complete: 'Zakończona',
   open: 'Do zrobienia', done: 'Zrobione', new: 'Nowe', in_progress: 'W realizacji', waiting: 'Oczekuje', closed: 'Zamknięte',
@@ -20,6 +20,7 @@ export function defaultData(kind: CrmKind, settings: CrmSettings, userId: string
   const now = new Date(); now.setSeconds(0, 0);
   const stamp = (d: Date) => d.toISOString().replace('.000Z', '+00:00');
   const values: Partial<Record<CrmKind, Partial<CrmData>>> = {
+    designer: { categoryId: settings.designerCategories[0].id },
     project: { status: 'planning', currency: 'PLN', systems: [], relationships: [] }, deal: { stageId: settings.stages[0].id, currency: 'PLN' },
     activity: { type: 'note', occurredAt: stamp(now) }, followup: { type: 'call', status: 'open', priority: 'medium', assigneeId: userId, reminderMinutes: 30 },
     event: { type: 'meeting', startsAt: stamp(now), endsAt: stamp(new Date(+now + 3600000)), assigneeId: userId, reminderMinutes: 30 },

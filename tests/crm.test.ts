@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanData, descendants, salesStats } from '../src/crm/model.ts';
 import type { CrmRecord, CrmSettings } from '../src/crm/types.ts';
-const settings: CrmSettings = { sources: [], categories: [], stages: [
+const settings: CrmSettings = { designerCategories: [], designerStrategies: [], sources: [], categories: [], stages: [
   { id: 'new', title: 'Nowe', color: '#000000', probability: 30, outcome: 'open' },
   { id: 'won', title: 'Wygrane', color: '#000000', probability: 100, outcome: 'won' },
   { id: 'lost', title: 'Przegrane', color: '#000000', probability: 0, outcome: 'lost' },

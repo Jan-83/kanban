@@ -12,7 +12,7 @@ export interface CrmData {
   warrantyUntil?: string; nextInspectionDate?: string; resolution?: string; enabled?: boolean; trigger?: string; days?: number;
   delayDays?: number; action?: string; taskType?: string;
 }
-export interface CrmRecord { id: string; kind: CrmKind; parentId: string | null; ownerId: string; visibility: 'team' | 'restricted'; accessIds: string[]; revision: number; data: CrmData; createdAt: string; updatedAt: string }
+export interface CrmRecord { id: string; kind: CrmKind; parentId: string | null; ownerId: string; visibility: 'team' | 'restricted'; accessIds: string[]; revision: number; data: CrmData; createdBy: string; createdAt: string; updatedAt: string }
 export type CrmInput = Pick<CrmRecord, 'kind' | 'parentId' | 'ownerId' | 'visibility' | 'accessIds' | 'revision' | 'data'>;
 export interface CrmStage { id: string; title: string; probability: number; color: string; outcome: 'open' | 'won' | 'lost' }
 export interface DesignerCategory { id: string; title: string; color: string }

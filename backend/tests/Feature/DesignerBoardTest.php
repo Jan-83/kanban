@@ -146,6 +146,25 @@ class DesignerBoardTest extends TestCase
         $this->assertSame('Do kontaktu', app(CrmRecords::class)->settings(self::BOARD)['data']['designerCategories'][0]['title']);
     }
 
+    public function test_note_author_remains_original_after_another_member_edits_it(): void
+    {
+        $author = $this->member('admin');
+        $owner = $this->member();
+        $crm = app(CrmRecords::class);
+        $designer = $crm->save(self::BOARD, $owner, $this->input($owner));
+        $input = ['kind' => 'activity', 'parentId' => $designer['id'], 'ownerId' => $owner->id, 'visibility' => 'team', 'accessIds' => [], 'revision' => 0,
+            'data' => ['title' => 'Ustalenia', 'type' => 'note', 'notes' => 'Pierwszy wpis autora']];
+        $note = $crm->save(self::BOARD, $author, $input);
+        $input['revision'] = 1;
+        $input['data']['notes'] = 'Uzupełnienie przez opiekuna';
+        $crm->save(self::BOARD, $owner, $input, $note['id']);
+
+        $this->auth($owner)->getJson($this->path())->assertOk()->assertJsonFragment([
+            'id' => $note['id'], 'createdBy' => $author->id, 'ownerId' => $owner->id,
+        ]);
+        $this->getJson($this->path('/records/'.$note['id']))->assertOk()->assertJsonPath('record.createdBy', $author->id);
+    }
+
     public function test_options_reject_invalid_colors_duplicates_unknown_fields_and_empty_categories(): void
     {
         $admin = $this->member('admin');

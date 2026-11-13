@@ -61,7 +61,7 @@ class CrmRecords
     {
         return ['id' => $row->id, 'kind' => $row->kind, 'parentId' => $row->parent_id, 'ownerId' => $row->owner_id,
             'visibility' => $row->visibility, 'accessIds' => json_decode($row->access_ids, true), 'revision' => (int) $row->revision,
-            'data' => $this->data($row), 'createdAt' => $row->created_at, 'updatedAt' => $row->updated_at];
+            'data' => $this->data($row), 'createdBy' => $row->created_by, 'createdAt' => $row->created_at, 'updatedAt' => $row->updated_at];
     }
 
     public function settings(string $board): array

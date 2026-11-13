@@ -7,7 +7,7 @@ const settings: CrmSettings = { designerCategories: [], designerStrategies: [], 
   { id: 'won', title: 'Wygrane', color: '#000000', probability: 100, outcome: 'won' },
   { id: 'lost', title: 'Przegrane', color: '#000000', probability: 0, outcome: 'lost' },
 ] };
-const record = (id: string, currency: string, cents: number, stageId: string, parentId: string | null = null): CrmRecord => ({ id, kind: 'deal', parentId, ownerId: 'test', visibility: 'team', accessIds: [], revision: 1, createdAt: '2026-01-01', updatedAt: '2026-01-01', data: { title: id, currency, valueCents: cents, stageId } });
+const record = (id: string, currency: string, cents: number, stageId: string, parentId: string | null = null): CrmRecord => ({ id, kind: 'deal', parentId, ownerId: 'test', visibility: 'team', accessIds: [], revision: 1, createdBy: 'test', createdAt: '2026-01-01', updatedAt: '2026-01-01', data: { title: id, currency, valueCents: cents, stageId } });
 test('sales totals never mix currencies and forecast rounds in minor units', () => {
   const results = salesStats([record('open', 'PLN', 10001, 'new'), record('foreign', 'EUR', 500000, 'new'), record('won', 'PLN', 30000, 'won'), record('lost', 'PLN', 70000, 'lost')], settings, 'PLN');
   assert.equal(results.pipeline, 10001); assert.equal(results.weighted, 3000); assert.equal(results.revenue, 30000); assert.equal(results.conversion, 50); assert.equal(results.deals.length, 3);

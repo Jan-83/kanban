@@ -29,6 +29,19 @@ class CrmDemoSeeder extends Seeder
         $crm = app(CrmRecords::class);
         $create = fn (string $kind, array $data, ?string $parent = null) => $crm->save($board, $user, ['kind' => $kind, 'parentId' => $parent, 'ownerId' => $user->id,
             'visibility' => 'team', 'accessIds' => [], 'revision' => 0, 'data' => $data]);
+        foreach ([
+            ['Anna Demo', 'Jasna Forma — demo', 'Warszawa', 'new', null],
+            ['Piotr Przykładowy', 'Pracownia Północ — demo', 'Łódź', 'new', 'first_contact'],
+            ['Julia Testowa', 'Studio Perspektywa — demo', 'Kraków', 'conversation', 'showroom'],
+            ['Michał Wzorcowy', 'Forma i Światło — demo', 'Warszawa', 'potential', 'project_support'],
+            ['Ewa Demonstracyjna', 'Prosta Linia — demo', 'Gdańsk', 'partner', 'relationship'],
+        ] as [$title, $studio, $city, $category, $strategy]) {
+            $designer = $create('designer', ['title' => $title, 'studio' => $studio, 'city' => $city, 'categoryId' => $category, 'strategyId' => $strategy,
+                'email' => 'projektant@example.test', 'phone' => '+48 000 000 000', 'specialization' => 'Wnętrza mieszkalne', 'notes' => 'Fikcyjny kontakt do testów tablicy.']);
+            if ($strategy) {
+                $create('activity', ['title' => 'Ustalenia demonstracyjne', 'type' => 'note', 'notes' => 'Omówiliśmy kierunek współpracy. Kolejny krok: wspólna prezentacja rozwiązań.', 'occurredAt' => now()->format('Y-m-d\TH:i:sP')], $designer['id']);
+            }
+        }
         $companies = [];
         foreach ([['Forma Studio', 'Architekt', 'Warszawa'], ['Przestrzeń Development', 'Deweloper', 'Kraków'], ['Marta Nowicka', 'Inwestor', 'Konstancin'], ['Nord Interior', 'Projektant', 'Gdańsk']] as [$title, $category, $city]) {
             $companies[] = $create('company', ['title' => $title, 'category' => $category, 'city' => $city, 'email' => 'demo@example.test', 'source' => 'Polecenie', 'notes' => 'Dane fikcyjne do testów interfejsu.']);

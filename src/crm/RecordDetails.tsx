@@ -9,7 +9,7 @@ export function RecordDetails({ record, snapshot, userId, busy, onClose, onEdit,
   const dialog = useRef<HTMLDialogElement>(null); const upload = useRef<HTMLInputElement>(null);
   const [details, setDetails] = useState<CrmDetails | null>(null); const [tab, setTab] = useState('overview'); const [error, setError] = useState(''); const [working, setWorking] = useState(false); const [existingTask, setExistingTask] = useState('');
   const children = descendants(snapshot.records, record.id); const parent = snapshot.records.find(r => r.id === record.parentId); const Icon = recordIcons[record.kind];
-  const contextId = ['company', 'contact', 'project', 'deal', 'offer', 'service'].includes(record.kind) ? record.id : record.parentId || undefined;
+  const contextId = ['company', 'contact', 'designer', 'project', 'deal', 'offer', 'service'].includes(record.kind) ? record.id : record.parentId || undefined;
   const owner = snapshot.members.find(m => m.id === record.ownerId); const canManage = snapshot.role === 'admin' || record.ownerId === userId;
   const reload = async () => setDetails(await crmApi.details(record.id));
   useEffect(() => { dialog.current?.showModal(); return () => dialog.current?.close(); }, []);
@@ -18,7 +18,8 @@ export function RecordDetails({ record, snapshot, userId, busy, onClose, onEdit,
   const addFile = (file?: File) => { if (!file) return; if (file.size > 5242880) { setError('Maksymalny rozmiar pliku to 5 MB.'); return; } void run(async () => { await crmApi.upload(record.id, file); await reload(); }); };
   const tabs = [['overview', 'Informacje'], ['activity', 'Historia kontaktu'], ['related', 'Powiązania'], ['files', 'Dokumenty'], ['history', 'Zmiany']];
   const overviewFields: [string, string | undefined][] = [
-    ['Kategoria', record.data.category], ['Branża', record.data.industry], ['Stanowisko', record.data.jobTitle], ['NIP', record.data.nip],
+    ['Pracownia', record.data.studio], ['Specjalizacja', record.data.specialization], ['Strategia', snapshot.settings.data.designerStrategies.find(s => s.id === record.data.strategyId)?.title],
+    ['Kategoria', record.kind === 'designer' ? snapshot.settings.data.designerCategories.find(c => c.id === record.data.categoryId)?.title : record.data.category], ['Branża', record.data.industry], ['Stanowisko', record.data.jobTitle], ['NIP', record.data.nip],
     ['Telefon', record.data.phone], ['E-mail', record.data.email], ['Adres', [record.data.address, record.data.city].filter(Boolean).join(', ')],
     ['Wartość netto', record.data.valueCents !== undefined ? money(record.data.valueCents, record.data.currency) : undefined], ['Źródło kontaktu', record.data.source],
     ['Termin', due(record) ? dateText(due(record), !!record.data.dueAt || !!record.data.startsAt) : undefined], ['Koniec wydarzenia', record.data.endsAt ? dateText(record.data.endsAt, true) : undefined],

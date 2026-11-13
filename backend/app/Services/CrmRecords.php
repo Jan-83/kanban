@@ -68,7 +68,7 @@ class CrmRecords
     {
         $row = DB::table('crm_settings')->where('board_id', $board)->first();
 
-        return ['revision' => (int) ($row->revision ?? 0), 'data' => $row ? $this->data($row) : $this->schema->defaults()];
+        return ['revision' => (int) ($row->revision ?? 0), 'data' => array_replace($this->schema->defaults(), $row ? $this->data($row) : [])];
     }
 
     public function bootstrap(string $board, User $user): array
@@ -116,7 +116,7 @@ class CrmRecords
             if ($input['parentId']) {
                 $parent = $rows[$input['parentId']] ?? null;
                 abort_unless($parent && $this->canRead($parent, $user, $member, $rows)
-                    && in_array($parent->kind, ['company', 'contact', 'project', 'deal', 'offer', 'service'], true), 422, 'Nieprawidłowe powiązanie.');
+                    && in_array($parent->kind, ['company', 'contact', 'designer', 'project', 'deal', 'offer', 'service'], true), 422, 'Nieprawidłowe powiązanie.');
                 $cursor = $parent;
                 $depth = 0;
                 while ($cursor) {
@@ -128,7 +128,7 @@ class CrmRecords
             abort_if(isset($data['assigneeId']) && ! in_array($data['assigneeId'], $members, true), 422, 'Wybierz aktywnego członka zespołu.');
             foreach ($data['relationships'] ?? [] as $relation) {
                 $related = $rows[$relation['recordId']] ?? null;
-                abort_unless($related && $this->canRead($related, $user, $member, $rows) && in_array($related->kind, ['company', 'contact'], true), 422, 'Nieprawidłowy uczestnik inwestycji.');
+                abort_unless($related && $this->canRead($related, $user, $member, $rows) && in_array($related->kind, ['company', 'contact', 'designer'], true), 422, 'Nieprawidłowy uczestnik inwestycji.');
             }
             $oldData = $old ? $this->data($old) : [];
             foreach (['kanbanTaskId', 'version', 'seriesId', 'sentAt'] as $serverField) {
@@ -191,11 +191,16 @@ class CrmRecords
     public function saveSettings(string $board, User $user, array $data, int $revision): array
     {
         abort_unless($this->membership($board, $user)->role === 'admin', 403, 'Ustawienia zmienia administrator.');
-        $data = $this->schema->settings($data);
 
         return DB::transaction(function () use ($board, $data, $revision): array {
             DB::table('boards')->where('id', $board)->lockForUpdate()->firstOrFail();
             abort_unless($this->settings($board)['revision'] === $revision, 409);
+            $data = $this->schema->settings(array_replace($this->settings($board)['data'], $data));
+            foreach (DB::table('crm_records')->where('board_id', $board)->where('kind', 'designer')->whereNull('deleted_at')->cursor() as $designer) {
+                $profile = $this->data($designer);
+                abort_unless(in_array($profile['categoryId'], array_column($data['designerCategories'], 'id'), true), 422, 'Najpierw przenieś projektantów z usuwanej kategorii.');
+                abort_if(! empty($profile['strategyId']) && ! in_array($profile['strategyId'], array_column($data['designerStrategies'], 'id'), true), 422, 'Najpierw zmień strategię przypisaną do projektantów.');
+            }
             foreach (DB::table('crm_records')->where('board_id', $board)->where('kind', 'deal')->whereNull('deleted_at')->cursor() as $deal) {
                 abort_unless(in_array($this->data($deal)['stageId'], array_column($data['stages'], 'id'), true), 422, 'Najpierw przenieś szanse z usuwanego etapu.');
             }
